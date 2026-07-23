@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Perfil{% endblock %}
+{% block content %}
+<div class="workspace-page profile-page">
+  <header class="workspace-header">
+    <div>
+      <p class="workspace-eyebrow">Sua conta</p>
+      <h1>Perfil</h1>
+      <p class="workspace-subtitle">Mantenha seus dados pessoais e de acesso atualizados.</p>
+    </div>
+  </header>
+  <div class="profile-layout">
+    <form method="post" class="workspace-panel workspace-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="workspace-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="workspace-form-heading">
+        <span class="workspace-form-icon"><i class="fa-regular fa-user" aria-hidden="true"></i></span>
+        <div><h2>Dados da conta</h2><p>Alterações de email exigem uma nova confirmação.</p></div>
+      </div>
+      <div class="workspace-form-grid">
+        <div class="form-field workspace-form-full">
+          <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+          {{ form.email }}{{ form.email.errors }}
+        </div>
+        <div class="form-field workspace-form-full">
+          <label class="form-label" for="{{ form.telefone.id_for_label }}">Telefone</label>
+          {{ form.telefone }}
+          <span class="phone-feedback form-help" data-phone-feedback>Digite um telefone válido.</span>
+          {{ form.telefone.errors }}
+        </div>
+        <div class="form-field workspace-form-full">
+          <label class="form-label" for="{{ form.cpf.id_for_label }}">CPF</label>
+          {{ form.cpf }}
+          <span class="cpf-feedback form-help" data-cpf-feedback>{% if form.cpf.help_text %}{{ form.cpf.help_text }}{% else %}Digite um CPF válido.{% endif %}</span>
+          {{ form.cpf.errors }}
+        </div>
+      </div>
+      <div class="workspace-form-actions">
+        <a class="btn-secondary" href="{% url 'accounts:password_change' %}"><i class="fa-solid fa-key" aria-hidden="true"></i> Alterar senha</a>
+        <button class="btn-primary" type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i> Salvar alterações</button>
+      </div>
+    </form>
+
+    <aside class="profile-aside">
+      <section class="workspace-panel profile-links-panel">
+        <a href="{% url 'core:terms' %}"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>Termos de Uso</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+        <a href="{% url 'core:privacy' %}"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Política de Privacidade</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+      </section>
+      <section class="workspace-panel workspace-danger-panel">
+        <span class="workspace-danger-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+        <h2>Excluir conta</h2>
+        <p>Exclua permanentemente sua conta e todos os dados vinculados. Esta ação não pode ser desfeita.</p>
+        <a class="btn-danger" href="{% url 'accounts:delete' %}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Excluir minha conta</a>
+      </section>
+    </aside>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+{% block email_content %}
+  <h1 style="margin:0 0 18px;color:#10231f;font-size:24px;line-height:1.25;font-weight:800;">Confirme seu email</h1>
+  <p style="margin:0 0 16px;color:#51625d;font-size:16px;line-height:1.7;">Para confirmar este endereço de email no Gastou Lembrou, acesse o link abaixo:</p>
+  <p style="margin:24px 0;">
+    <a href="{{ activate_url }}" style="display:inline-block;border-radius:6px;background:#0d6b5a;padding:12px 18px;color:#ffffff;font-weight:700;text-decoration:none;">Confirmar email</a>
+  </p>
+  <p style="margin:0 0 16px;color:#51625d;font-size:14px;line-height:1.7;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+  <p style="margin:0 0 18px;color:#0d6b5a;font-size:14px;line-height:1.7;word-break:break-all;">{{ activate_url }}</p>
+  <p style="margin:0;color:#51625d;font-size:14px;line-height:1.7;">Se você não solicitou essa confirmação, ignore esta mensagem.</p>
+{% endblock %}

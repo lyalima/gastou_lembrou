@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Meus Pagamentos{% endblock %}
+{% block content %}
+<div class="payments-page">
+  <header class="payments-header">
+    <div>
+      <p class="payments-eyebrow">Controle financeiro</p>
+      <h1>Meus Pagamentos</h1>
+      <p class="payments-result-count">
+        {{ page_obj.paginator.count }} pagamento{{ page_obj.paginator.count|pluralize }} encontrado{{ page_obj.paginator.count|pluralize }}
+      </p>
+    </div>
+    <div class="payments-header-actions">
+      <button class="btn-secondary" type="button" hx-get="{% url 'payments:statement_import' %}" hx-target="#modal" hx-swap="innerHTML">
+        <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+        Importar extrato
+      </button>
+      <button class="btn-secondary" type="button" hx-get="{% url 'payments:credit_card_statement_import' %}" hx-target="#modal" hx-swap="innerHTML">
+        <i class="fa-regular fa-credit-card" aria-hidden="true"></i>
+        Importar fatura
+      </button>
+      <button class="btn-primary" type="button" hx-get="{% url 'payments:category_create' %}" hx-target="#modal" hx-swap="innerHTML">
+        <i class="fa-solid fa-folder-plus" aria-hidden="true"></i>
+        Nova categoria
+      </button>
+      <button class="btn-primary" type="button" hx-get="{% url 'payments:create' %}" hx-target="#modal" hx-swap="innerHTML">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        <span>Novo pagamento</span>
+      </button>
+    </div>
+  </header>
+
+  <form class="payment-filters" method="get" action="{% url 'payments:list' %}" autocomplete="off">
+    <div class="payment-filters-heading">
+      <h2><i class="fa-solid fa-sliders" aria-hidden="true"></i> Filtros</h2>
+      {% if request.GET %}
+        <a class="payment-clear-all" href="{% url 'payments:list' %}">Limpar filtros</a>
+      {% endif %}
+    </div>
+    <div class="payment-filters-body">
+      <div class="payment-filters-row payment-filters-primary">
+        <label class="filter-field filter-search">
+          <span>Buscar por título</span>
+          <span class="search-field">
+            <i class="fa-solid fa-magnifying-glass search-field-icon" aria-hidden="true"></i>
+            <input class="form-input search-input" type="search" name="q" value="{{ request.GET.q }}" placeholder="Ex.: conta de energia…">
+            <button class="btn-primary" type="submit" aria-label="Buscar por título" title="Buscar por título">
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+          </span>
+        </label>
+
+        <label class="filter-field">
+          <span>Categoria</span>
+          <select class="form-input" name="category">
+            <option value="">Todas as categorias</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label class="filter-field">
+          <span>Forma de pagamento</span>
+          <select class="form-input" name="payment_method">
+            <option value="">Todas as formas</option>
+            {% for method in payment_methods %}
+              <option value="{{ method.id }}" {% if request.GET.payment_method == method.id|stringformat:"s" %}selected{% endif %}>{{ method.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div class="payment-filters-row payment-filters-secondary">
+        <label class="filter-field">
+          <span>Dia</span>
+          <input class="form-input" type="date" name="day" value="{{ request.GET.day }}">
+        </label>
+
+        <label class="filter-field">
+          <span>Mês</span>
+          <span class="clearable-filter-field">
+            <input class="form-input clearable-filter-input" type="number" name="month" min="1" max="12" value="{{ request.GET.month }}" placeholder="Mês">
+            <button class="clear-filter-button" type="button" data-clear-filter aria-label="Limpar filtro de mês" title="Limpar mês">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </span>
+        </label>
+
+        <label class="filter-field">
+          <span>Ano</span>
+          <span class="clearable-filter-field">
+            <input class="form-input clearable-filter-input" type="number" name="year" min="2000" value="{{ request.GET.year }}" placeholder="Ano">
+            <button class="clear-filter-button" type="button" data-clear-filter aria-label="Limpar filtro de ano" title="Limpar ano">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </span>
+        </label>
+
+        <label class="filter-field">
+          <span>Agendamento</span>
+          <select class="form-input" name="schedule_status">
+            <option value="">Todos</option>
+            <option value="scheduled" {% if request.GET.schedule_status == "scheduled" %}selected{% endif %}>Agendados</option>
+            <option value="unscheduled" {% if request.GET.schedule_status == "unscheduled" %}selected{% endif %}>Não agendados</option>
+          </select>
+        </label>
+
+        <label class="filter-field">
+          <span>Ordenação</span>
+          <select class="form-input" name="order">
+            <option value="desc">Mais recentes</option>
+            <option value="asc" {% if request.GET.order == "asc" %}selected{% endif %}>Mais antigos</option>
+          </select>
+        </label>
+
+        <button class="btn-primary filter-submit" type="submit">
+          <i class="fa-solid fa-filter" aria-hidden="true"></i>
+          Filtrar
+        </button>
+      </div>
+
+      {% if request.GET.q or request.GET.category or request.GET.payment_method or request.GET.day or request.GET.month or request.GET.year or request.GET.schedule_status or request.GET.order == "asc" %}
+        <div class="payment-active-filters" aria-label="Filtros aplicados">
+          <span class="payment-active-label">Aplicados:</span>
+          {% if request.GET.q %}
+            <span class="payment-filter-chip">Busca: {{ request.GET.q }}<button type="button" data-clear-filter-name="q" aria-label="Remover filtro de busca"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+          {% endif %}
+          {% if request.GET.category %}
+            {% for category in categories %}
+              {% if request.GET.category == category.id|stringformat:"s" %}
+                <span class="payment-filter-chip">{{ category.name }}<button type="button" data-clear-filter-name="category" aria-label="Remover filtro de categoria"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {% if request.GET.payment_method %}
+            {% for method in payment_methods %}
+              {% if request.GET.payment_method == method.id|stringformat:"s" %}
+                <span class="payment-filter-chip">{{ method.name }}<button type="button" data-clear-filter-name="payment_method" aria-label="Remover filtro de forma de pagamento"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {% if request.GET.day %}
+            <span class="payment-filter-chip">Dia: {{ request.GET.day }}<button type="button" data-clear-filter-name="day" aria-label="Remover filtro de dia"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+          {% endif %}
+          {% if request.GET.month %}
+            <span class="payment-filter-chip">Mês: {{ request.GET.month }}<button type="button" data-clear-filter-name="month" aria-label="Remover filtro de mês"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+          {% endif %}
+          {% if request.GET.year %}
+            <span class="payment-filter-chip">Ano: {{ request.GET.year }}<button type="button" data-clear-filter-name="year" aria-label="Remover filtro de ano"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+          {% endif %}
+          {% if request.GET.schedule_status %}
+            <span class="payment-filter-chip">{% if request.GET.schedule_status == "scheduled" %}Agendados{% else %}Não agendados{% endif %}<button type="button" data-clear-filter-name="schedule_status" aria-label="Remover filtro de agendamento"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+          {% endif %}
+          {% if request.GET.order == "asc" %}
+            <span class="payment-filter-chip">Mais antigos<button type="button" data-clear-filter-name="order" data-default-value="desc" aria-label="Remover ordenação"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="payment-grid" aria-label="Lista de pagamentos">
+  {% for payment in payments %}
+    {% include "payments/partials/payment_card.html" %}
+  {% empty %}
+    <div class="payment-empty-state">
+      <span class="payment-empty-icon"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span>
+      <h2>Nenhum pagamento encontrado</h2>
+      <p>{% if request.GET %}Tente ajustar ou limpar os filtros aplicados.{% else %}Seus pagamentos aparecerão aqui quando forem cadastrados.{% endif %}</p>
+    </div>
+  {% endfor %}
+  </section>
+
+  {% if is_paginated %}
+    <nav class="payment-pagination" aria-label="Paginação dos pagamentos">
+      {% if page_obj.has_previous %}
+        <a class="payment-page-icon" href="?{% if filter_querystring %}{{ filter_querystring }}&amp;{% endif %}page=1" aria-label="Primeira página" title="Primeira página"><i class="fa-solid fa-angles-left" aria-hidden="true"></i></a>
+        <a class="btn-secondary payment-page-step" href="?{% if filter_querystring %}{{ filter_querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i><span>Anterior</span></a>
+      {% endif %}
+      <span class="payment-page-status" aria-current="page">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="btn-secondary payment-page-step" href="?{% if filter_querystring %}{{ filter_querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}"><span>Próxima</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+        <a class="payment-page-icon" href="?{% if filter_querystring %}{{ filter_querystring }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Última página" title="Última página"><i class="fa-solid fa-angles-right" aria-hidden="true"></i></a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

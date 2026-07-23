@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="workspace-page dashboard-page">
+  <header class="workspace-header">
+    <div>
+      <p class="workspace-eyebrow">Visão financeira</p>
+      <h1>Dashboard</h1>
+      <p class="workspace-subtitle">Resumo dos pagamentos em {{ insight_period_label }}.</p>
+    </div>
+    <button
+      class="btn-primary"
+      type="button"
+      hx-get="{% url 'dashboard:spending_goal' %}?month={{ spending_goal_period_key }}"
+      hx-target="#modal"
+      hx-swap="innerHTML"
+    >
+      <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+      {% if spending_goal %}Editar meta{% else %}Definir meta{% endif %}
+    </button>
+  </header>
+
+  <section class="workspace-panel dashboard-toolbar" aria-labelledby="dashboard-tools-title">
+    <div class="workspace-panel-heading">
+      <div>
+        <h2 id="dashboard-tools-title"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Período e relatório</h2>
+        <p>Consulte as métricas e gere o PDF mensal.</p>
+      </div>
+    </div>
+    <div class="dashboard-toolbar-grid">
+      <form class="dashboard-tool-form" action="{% url 'dashboard:home' %}" method="get">
+        <label class="filter-field" for="dashboard-month">Mês do dashboard</label>
+        <div class="dashboard-tool-controls">
+          <select class="form-input" id="dashboard-month" name="month">
+            <option value="" {% if not selected_dashboard_month %}selected{% endif %}>Ver tudo</option>
+            {% for month in dashboard_months %}
+              <option value="{{ month.value }}" {% if selected_dashboard_month == month.value %}selected{% endif %}>{{ month.label }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn-primary" type="submit"><i class="fa-solid fa-filter" aria-hidden="true"></i> Filtrar</button>
+        </div>
+      </form>
+      <form class="dashboard-tool-form" action="{% url 'dashboard:report_pdf' %}" method="get">
+        <label class="filter-field" for="report-month">Mês do relatório</label>
+        <div class="dashboard-tool-controls">
+          <select class="form-input" id="report-month" name="month">
+            {% if report_months %}
+              {% for month in report_months %}
+                <option value="{{ month.value }}" {% if selected_report_month == month.value %}selected{% endif %}>{{ month.label }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="{{ selected_report_month }}">{{ selected_report_month_label }}</option>
+            {% endif %}
+          </select>
+          <button class="btn-primary" type="submit"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Gerar relatório PDF</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  {% include "dashboard/partials/insights.html" %}
+
+  <section class="workspace-panel spending-goal-panel" aria-labelledby="spending-goal-title">
+    <div class="workspace-panel-heading">
+      <div>
+        <h2 id="spending-goal-title"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Meta de gastos mensal - {{ spending_goal_month_label }} </h2>
+      </div>
+      <button
+        class="btn-primary"
+        type="button"
+        hx-get="{% url 'dashboard:spending_goal' %}?month={{ spending_goal_period_key }}"
+        hx-target="#modal"
+        hx-swap="innerHTML"
+      >
+        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+        {% if spending_goal %}Editar{% else %}Definir{% endif %}
+      </button>
+    </div>
+    <div class="spending-goal-summary">
+      <div>
+        <span>Gasto no mês</span>
+        <strong>R$ {{ spending_goal_spent|floatformat:2 }}</strong>
+      </div>
+      <div>
+        <span>Meta mensal</span>
+        <strong>R$ {{ spending_goal_amount|floatformat:2 }}</strong>
+      </div>
+      <div>
+        <span>Progresso</span>
+        <strong>{{ spending_goal_percentage }}%</strong>
+      </div>
+    </div>
+    <div
+      class="spending-goal-progress spending-goal-progress-{{ spending_goal_status }}"
+      role="progressbar"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="{{ spending_goal_bar_width }}"
+      aria-label="Progresso da meta mensal"
+    >
+      <span style="width: {{ spending_goal_bar_width }}%"></span>
+    </div>
+    <p class="spending-goal-helper">
+      {% if spending_goal %}
+        {% if spending_goal.alert_threshold %}
+          Aviso por email configurado ao atingir {{ spending_goal.alert_threshold }}% da meta.
+        {% else %}
+          Avisos por email desativados para esta meta.
+        {% endif %}
+      {% else %}
+        Nenhuma meta definida para este mês.
+      {% endif %}
+    </p>
+  </section>
+
+  <section class="metric-grid" aria-label="Resumo financeiro">
+    <article class="metric-card metric-card-primary">
+      <span class="metric-icon"><i class="fa-solid fa-wallet" aria-hidden="true"></i></span>
+      <div>
+        <p>Total registrado</p>
+        <strong>R$ {{ total|floatformat:2 }}</strong>
+      </div>
+    </article>
+    <article class="metric-card">
+      <span class="metric-icon metric-icon-blue"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span>
+      <div>
+        <p>Total de pagamentos</p>
+        <strong>{{ payment_count }}</strong>
+      </div>
+    </article>
+    <article class="metric-card">
+      <span class="metric-icon metric-icon-amber"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
+      <div>
+        <p>Pagamentos agendados</p>
+        <strong>{{ scheduled_count }}</strong>
+      </div>
+    </article>
+  </section>
+
+  <div class="dashboard-chart-grid">
+    <section class="workspace-panel chart-panel" data-chart-panel data-chart-mode="currency">
+      <div class="workspace-panel-heading">
+        <h2>Gastos por categoria</h2>
+        <div class="chart-heading-actions" aria-label="Visualização do gráfico de gastos por categoria">
+          <button class="chart-toggle-btn is-active" type="button" data-chart-toggle="currency" aria-pressed="true">R$</button>
+          <button class="chart-toggle-btn" type="button" data-chart-toggle="percent" aria-pressed="false">%</button>
+        </div>
+      </div>
+      <div class="chart-frame"><canvas id="categoryChart" height="160" role="img" aria-label="Gráfico de gastos por categoria"></canvas></div>
+    </section>
+    <section class="workspace-panel chart-panel">
+      <div class="workspace-panel-heading"><h2>{{ evolution_title }}</h2><span>R$</span></div>
+      <div class="chart-frame"><canvas id="monthChart" height="160" role="img" aria-label="{{ evolution_title }}"></canvas></div>
+    </section>
+    <section class="workspace-panel chart-panel" data-chart-panel data-chart-mode="currency">
+      <div class="workspace-panel-heading">
+        <h2>Gastos por forma de pagamento</h2>
+        <div class="chart-heading-actions" aria-label="Visualização do gráfico de gastos por forma de pagamento">
+          <button class="chart-toggle-btn is-active" type="button" data-chart-toggle="currency" aria-pressed="true">R$</button>
+          <button class="chart-toggle-btn" type="button" data-chart-toggle="percent" aria-pressed="false">%</button>
+        </div>
+      </div>
+      <div class="chart-frame"><canvas id="paymentMethodChart" height="160" role="img" aria-label="Gráfico de gastos por forma de pagamento"></canvas></div>
+    </section>
+    <section class="workspace-panel">
+      <div class="workspace-panel-heading"><h2>Formas de pagamento</h2></div>
+      <div class="workspace-data-list">
+        {% for method in payment_method_metrics %}
+          <div class="workspace-data-row">
+            <div>
+              <strong>{{ method.name }}</strong>
+              <span>{{ method.count }} pagamento{{ method.count|pluralize }}</span>
+            </div>
+            <strong>R$ {{ method.total|floatformat:2 }}</strong>
+          </div>
+        {% empty %}
+          <p class="workspace-empty-copy">Nenhuma forma de pagamento registrada.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="workspace-panel dashboard-recent">
+    <div class="workspace-panel-heading">
+      <h2>Últimos pagamentos</h2>
+      <a href="{% url 'payments:list' %}">Ver pagamentos <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    <div class="workspace-data-list">
+      {% for payment in recent_payments %}
+        <div class="workspace-data-row">
+          <div>
+            <strong>{{ payment.title }}</strong>
+            <span>{% if payment.payment_date %}{{ payment.payment_date|date:"d/m/Y" }}{% else %}Sem data{% endif %}</span>
+          </div>
+          <strong>R$ {{ payment.amount|floatformat:2 }}</strong>
+        </div>
+      {% empty %}
+        <p class="workspace-empty-copy">Nenhum pagamento registrado.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {{ category_labels|json_script:"category-labels" }}
+  {{ category_totals|json_script:"category-totals" }}
+  {{ month_labels|json_script:"month-labels" }}
+  {{ month_totals|json_script:"month-totals" }}
+  {{ payment_method_labels|json_script:"payment-method-labels" }}
+  {{ payment_method_totals|json_script:"payment-method-totals" }}
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      renderDashboardCharts();
+    });
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) window.location.reload();
+    });
+  </script>
+</div>
+{% endblock %}

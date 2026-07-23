@@ -1,0 +1,56 @@
+<article class="payment-card{% if payment.scheduled_date %} payment-card-scheduled{% endif %}">
+  <div class="payment-card-labels">
+    <span class="payment-category-tag">
+      {% if payment.category %}{{ payment.category.name }}{% else %}<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Categorização automática pendente{% endif %}
+    </span>
+    {% if payment.scheduled_date %}
+      {% if payment.is_schedule_finished %}
+        <span class="payment-schedule-finished-tag"><i class="fa-solid fa-check" aria-hidden="true"></i> Agendado - Finalizado</span>
+      {% else %}
+        <span class="payment-scheduled-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Agendado</span>
+      {% endif %}
+    {% endif %}
+    {% if payment.is_credit_card_bill %}
+      <span class="payment-bill-tag"><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Fatura</span>
+    {% endif %}
+    {% if payment.is_installment %}
+      <span class="payment-installment-tag"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Parcelado</span>
+    {% endif %}
+  </div>
+  <h2 class="payment-card-title">{{ payment.title }}</h2>
+  <strong class="payment-card-amount">R$ {{ payment.amount|floatformat:2 }}</strong>
+  <dl class="payment-card-meta">
+    <div>
+      <dt><i class="fa-solid fa-tags" aria-hidden="true"></i> Tipo</dt>
+      <dd>{{ payment.get_kind_display }}</dd>
+    </div>
+    <div>
+      <dt><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Forma de Pagamento</dt>
+      <dd title="{{ payment.payment_method.name|default:'-' }}">{{ payment.payment_method.name|default:"-" }}</dd>
+    </div>
+    <div>
+      <dt><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Data de pagamento</dt>
+      <dd>{% if payment.payment_date %}{{ payment.payment_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+    </div>
+    <div>
+      <dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Agendada para</dt>
+      <dd>{% if payment.scheduled_date %}{{ payment.scheduled_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+    </div>
+  </dl>
+  <footer class="payment-card-footer">
+    <span class="payment-receipt-status">
+      {% if payment.image %}<i class="fa-solid fa-paperclip" aria-hidden="true"></i> Comprovante{% else %}<i class="fa-regular fa-file" aria-hidden="true"></i> Sem arquivo{% endif %}
+    </span>
+    <div class="payment-card-actions">
+      <button class="icon-action-btn" hx-get="{% url 'payments:detail' payment.pk %}" hx-target="#modal" type="button" aria-label="Visualizar pagamento {{ payment.title }}" title="Visualizar">
+        <i class="fa-solid fa-eye" aria-hidden="true"></i>
+      </button>
+      <button class="icon-action-btn" hx-get="{% url 'payments:update' payment.pk %}" hx-target="#modal" type="button" aria-label="Editar pagamento {{ payment.title }}" title="Editar">
+        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+      </button>
+      <button class="icon-action-btn icon-action-danger" hx-get="{% url 'payments:delete' payment.pk %}" hx-target="#modal" type="button" aria-label="Excluir pagamento {{ payment.title }}" title="Excluir">
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+      </button>
+    </div>
+  </footer>
+</article>

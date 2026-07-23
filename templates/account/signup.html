@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+{% load socialaccount %}
+{% block title %}Cadastro | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="auth-shell" id="main-content">
+  <form method="post" class="auth-card auth-card-wide">
+    {% csrf_token %}
+    {% include "partials/auth_brand.html" %}
+    <header class="auth-heading">
+      <span class="auth-kicker">Sua organização começa aqui</span>
+      <h1>Criar conta</h1>
+      <p>Comece a organizar suas contas em poucos minutos.</p>
+    </header>
+    {% if form.non_field_errors %}
+      <div class="auth-alert auth-alert-error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>{{ form.non_field_errors }}</span></div>
+    {% endif %}
+    <div class="auth-fields">
+      <div class="form-field"><label class="form-label" for="{{ form.email.id_for_label }}">Email</label>{{ form.email }}{{ form.email.errors }}</div>
+      <div class="form-field"><label class="form-label" for="{{ form.password1.id_for_label }}">Senha</label><span class="password-wrap">{{ form.password1 }}<button type="button" data-toggle-password aria-label="Mostrar senha" title="Mostrar senha"><i class="fa-regular fa-eye" aria-hidden="true"></i></button></span>{{ form.password1.errors }}</div>
+      <div class="form-field"><label class="form-label" for="{{ form.password2.id_for_label }}">Confirmar senha</label><span class="password-wrap">{{ form.password2 }}<button type="button" data-toggle-password aria-label="Mostrar senha" title="Mostrar senha"><i class="fa-regular fa-eye" aria-hidden="true"></i></button></span>{{ form.password2.errors }}</div>
+    </div>
+    <div class="auth-consents">
+      <label class="legal-consent">{{ form.accept_terms }} <span>{{ form.accept_terms.label }} </span></label>
+      {{ form.accept_terms.errors }}
+      <label class="legal-consent">{{ form.acknowledge_privacy }} <span>{{ form.acknowledge_privacy.label }} </span></label>
+      {{ form.acknowledge_privacy.errors }}
+    </div>
+    <button class="btn-primary auth-submit" type="submit"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Cadastrar</button>
+    <a class="btn-secondary auth-secondary-action" href="{% url 'core:home' %}">Não aceito</a>
+    <div class="auth-divider"><span>ou</span></div>
+    {% if google_oauth_configured %}
+      <a class="btn-secondary auth-google" href="{% provider_login_url 'google' %}"><i class="fa-brands fa-google" aria-hidden="true"></i> Cadastrar com Google</a>
+    {% else %}
+      <span class="auth-provider-disabled"><i class="fa-brands fa-google" aria-hidden="true"></i> Google OAuth aguardando configuração</span>
+    {% endif %}
+    <p class="auth-switch">Já tem conta? <a href="{% url 'account_login' %}">Entrar</a></p>
+    <footer class="auth-legal-links"><a href="{% url 'core:terms' %}">Termos de Uso</a><span>·</span><a href="{% url 'core:privacy' %}">Política de Privacidade</a></footer>
+  </form>
+</main>
+{% endblock %}

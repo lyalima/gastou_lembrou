@@ -1,0 +1,15 @@
+{% if messages %}
+  <div class="app-messages" role="status" aria-live="polite">
+    {% for message in messages %}
+      {% if message.tags == "error" %}
+        <div class="app-message app-message-error"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>{{ message }}</span></div>
+      {% elif message.tags == "warning" %}
+        <div class="app-message app-message-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>{{ message }}</span></div>
+      {% elif message.tags == "info" %}
+        <div class="app-message app-message-info"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>{{ message }}</span></div>
+      {% else %}
+        <div class="app-message app-message-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>{{ message }}</span></div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}

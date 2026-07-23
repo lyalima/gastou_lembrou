@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Excluir conta{% endblock %}
+{% block content %}
+<div class="workspace-page workspace-page-narrow">
+  <a class="workspace-back-link" href="{% url 'accounts:profile' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar ao perfil</a>
+  <section class="workspace-panel account-delete-panel">
+    <div class="account-delete-heading">
+      <span class="workspace-danger-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+      <div>
+        <p class="workspace-eyebrow">Ação permanente</p>
+        <h1>Excluir conta permanentemente</h1>
+        <p>Esta ação excluirá sua conta e todos os dados vinculados, incluindo pagamentos, agendamentos, lembretes, relatórios, insights, aceites legais e arquivos.</p>
+      </div>
+    </div>
+    <div class="account-delete-warning"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>A exclusão é definitiva e não poderá ser revertida pelo suporte.</span></div>
+    <form class="account-delete-form" method="post">
+      {% csrf_token %}
+      <div class="form-field">
+        <label class="form-label" for="{{ form.confirmation.id_for_label }}">{{ form.confirmation.label }}</label>
+        {{ form.confirmation }}
+        {{ form.confirmation.errors }}
+      </div>
+      <div class="workspace-form-actions">
+        <a class="btn-secondary" href="{% url 'accounts:profile' %}">Cancelar</a>
+        <button class="btn-danger" type="submit"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Excluir permanentemente</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

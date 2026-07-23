@@ -1,0 +1,9 @@
+Olá,
+
+Para confirmar este endereço de email no Gastou Lembrou, acesse o link abaixo:
+
+{{ activate_url }}
+
+Se você não solicitou essa confirmação, ignore esta mensagem.
+
+Equipe Gastou Lembrou

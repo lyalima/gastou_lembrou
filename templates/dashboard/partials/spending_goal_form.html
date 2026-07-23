@@ -1,0 +1,55 @@
+<div class="modal-card payment-modal spending-goal-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Meta mensal de {{ goal_month_label }}</span>
+      <h2 id="spending-goal-modal-title">{% if goal %}Editar meta de gastos{% else %}Definir meta de gastos{% endif %}</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <form class="payment-modal-form" method="post" hx-post="{{ request.path }}?month={{ goal_month_value }}" hx-target="#modal">
+    {% csrf_token %}
+    <input type="hidden" name="month" value="{{ goal_month_value }}">
+    <div class="payment-modal-body">
+      {% if form.non_field_errors %}
+        <div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <section class="payment-form-section" aria-labelledby="spending-goal-main">
+        <h3 id="spending-goal-main">Valor mensal da meta</h3>
+        <div class="payment-form-grid">
+          <div class="form-field payment-form-full">
+            <span class="currency-field">
+              <span class="currency-prefix">R$</span>
+              {{ form.amount }}
+            </span>
+            {{ form.amount.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="payment-form-section" aria-labelledby="spending-goal-alerts">
+        <h3 id="spending-goal-alerts">Avisos por email</h3>
+        <p class="form-help">Escolha se deseja receber avisos quando parte da meta for atingida.</p>
+        <fieldset class="goal-threshold-group">
+          <legend class="sr-only">{{ form.alert_threshold.label }}</legend>
+          {% for radio in form.alert_threshold %}
+            <label class="goal-threshold-option" for="{{ radio.id_for_label }}">
+              {{ radio.tag }}
+              <span>{{ radio.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </fieldset>
+        {{ form.alert_threshold.errors }}
+      </section>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-primary" type="submit">
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        Salvar meta
+      </button>
+    </footer>
+  </form>
+</div>

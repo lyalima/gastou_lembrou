@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Suporte{% endblock %}
+{% block content %}
+<div class="workspace-page workspace-page-narrow">
+  <header class="workspace-header">
+    <div>
+      <p class="workspace-eyebrow">Atendimento</p>
+      <h1>Suporte</h1>
+      <p class="workspace-subtitle">Envie sua dúvida, sugestão ou relato de problema.</p>
+    </div>
+  </header>
+  <form method="post" enctype="multipart/form-data" class="workspace-panel workspace-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="workspace-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="workspace-form-heading">
+      <span class="workspace-form-icon"><i class="fa-regular fa-message" aria-hidden="true"></i></span>
+      <div><h2>Nova mensagem</h2><p>Campos com dados da conta são preenchidos automaticamente.</p></div>
+    </div>
+    <div class="workspace-form-grid">
+      <div class="form-field">
+        <label class="form-label" for="{{ form.nome.id_for_label }}">Nome</label>
+        {{ form.nome }}{{ form.nome.errors }}
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="{{ form.email.id_for_label }}">Email da conta</label>
+        {{ form.email }}{{ form.email.errors }}
+      </div>
+      <div class="form-field workspace-form-full">
+        <label class="form-label" for="{{ form.problema.id_for_label }}">Descreva seu problema, dúvida ou sugestão</label>
+        {{ form.problema }}{{ form.problema.errors }}
+      </div>
+      <div class="form-field workspace-form-full">
+        <label class="form-label" for="{{ form.screenshot.id_for_label }}">Imagem ou captura de tela (JPG ou PNG)</label>
+        {{ form.screenshot }}
+        <span class="form-help">Arquivo opcional de até 5 MB.</span>
+        {{ form.screenshot.errors }}
+      </div>
+    </div>
+    <div class="workspace-form-actions">
+      <button class="btn-primary" type="submit"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Enviar mensagem</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

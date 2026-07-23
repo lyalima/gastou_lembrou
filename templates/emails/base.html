@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>{{ title }}</title>
+  <style>
+    :root {
+      color-scheme: light only;
+      supported-color-schemes: light;
+    }
+
+    body,
+    .email-page,
+    .email-main {
+      background: #f7faf8 !important;
+      background-color: #f7faf8 !important;
+      color: #10231f !important;
+    }
+
+    .email-card {
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      color: #10231f !important;
+    }
+
+    .email-footer {
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      color: #51625d !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body,
+      .email-page,
+      .email-main {
+        background: #f7faf8 !important;
+        background-color: #f7faf8 !important;
+        color: #10231f !important;
+      }
+
+      .email-card {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #10231f !important;
+      }
+
+      .email-footer {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #51625d !important;
+      }
+    }
+  </style>
+</head>
+<body bgcolor="#f7faf8" style="margin:0;background-color:#f7faf8 !important;background:#f7faf8 !important;color:#10231f !important;font-family:Arial,Helvetica,sans-serif;color-scheme:light only;">
+  {% if preheader %}
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{{ preheader }}</div>
+  {% endif %}
+  <table class="email-page" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f7faf8" style="background-color:#f7faf8 !important;background:#f7faf8 !important;border-collapse:collapse;color-scheme:light only;color:#10231f !important;">
+    <tr>
+      <td bgcolor="#0b2f2b" style="background-color:#0b2f2b !important;background:#0b2f2b !important;padding:22px 18px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:720px;margin:0 auto;border-collapse:collapse;">
+          <tr>
+            <td style="vertical-align:middle;">
+              <a href="{{ site_url }}" style="color:#fff7ed;text-decoration:none;">
+                <table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td width="56" style="width:56px;vertical-align:middle;">
+                      <img src="{{ logo_url }}" width="56" height="56" alt="Logo Gastou, Lembrou!" style="display:block;width:56px;height:56px;border-radius:16px;object-fit:cover;">
+                    </td>
+                    <td width="18" style="width:18px;font-size:0;line-height:0;">&nbsp;</td>
+                    <td style="vertical-align:middle;">
+                      <span style="display:block;color:#fff7ed !important;font-size:26px;font-weight:800;line-height:1.1;">Gastou, Lembrou!</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="email-main" bgcolor="#f7faf8" style="background-color:#f7faf8 !important;background:#f7faf8 !important;color:#10231f !important;padding:34px 18px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:720px;margin:0 auto;border-collapse:collapse;">
+          <tr>
+            <td class="email-card" bgcolor="#ffffff" style="background-color:#ffffff !important;background:#ffffff !important;color:#10231f !important;border:1px solid #dbe8e2;border-radius:8px;padding:28px;box-shadow:0 18px 35px rgba(16,35,31,0.08);">
+              {% block email_content %}{% endblock %}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="email-footer" bgcolor="#ffffff" style="border-top:1px solid #dbe8e2;background-color:#ffffff !important;background:#ffffff !important;padding:24px 18px;text-align:center;color:#51625d !important;font-size:14px;font-weight:700;">
+        Copyright @ Gastou, Lembrou! 2026
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

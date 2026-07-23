@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Termos de Uso | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="public-shell legal-page" id="main-content">
+  <header class="public-topbar">
+    <div class="public-topbar-inner public-topbar-legal">
+      <a href="{% url 'core:home' %}" class="public-brand">
+        <img src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="">
+        <span>Gastou, Lembrou!</span>
+      </a>
+      <a class="public-secondary-button" href="{% url 'account_signup' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar </a>
+    </div>
+  </header>
+
+  <article class="legal-content">
+    <header class="legal-intro">
+      <p class="legal-version">Versão {{ terms_version }} <span>·</span> Vigência em {{ terms_effective_date }}</p>
+      <h1>Termos de Uso e Serviço</h1>
+      <p>Estes Termos regulam o acesso e o uso da plataforma Gastou, Lembrou!. Leia o documento integralmente antes de criar sua conta.</p>
+    </header>
+
+    <div class="legal-document">
+      <section>
+        <h2>1. Aceitação e abrangência</h2>
+        <p>Ao criar uma conta, você declara que leu, compreendeu e aceitou estes Termos e a Política de Privacidade vigente. Caso não concorde, não conclua o cadastro nem utilize os serviços autenticados.</p>
+        <p>O serviço é destinado a pessoas com capacidade civil para contratar. Menores de idade somente poderão utilizá-lo quando legalmente autorizados e assistidos ou representados por responsável.</p>
+      </section>
+
+      <section>
+        <h2>2. Descrição do serviço</h2>
+        <p>O Gastou, Lembrou! oferece ferramentas de organização financeira pessoal, incluindo cadastro e categorização de pagamentos, armazenamento de notas fiscais e comprovantes, importação de extratos bancários, importação de faturas de cartão de crédito em PDF, agendamentos, lembretes por email, dashboards, relatórios PDF, suporte e insights automatizados.</p>
+        <p>A plataforma não é instituição financeira, banco, serviço contábil, consultoria de investimentos ou assessoria jurídica. Os conteúdos e insights têm finalidade exclusivamente informativa e organizacional.</p>
+      </section>
+
+      <section>
+        <h2>3. Conta e segurança</h2>
+        <p>Você deve fornecer informações verdadeiras, manter seus dados atualizados e proteger suas credenciais. A conta é pessoal e não deve ser compartilhada. Atividades realizadas após autenticação serão presumidas como feitas pelo titular, ressalvadas falhas comprovadas de segurança.</p>
+        <p>O acesso pode ocorrer por email e senha ou por autenticação Google. O uso do provedor externo também está sujeito aos termos próprios desse fornecedor.</p>
+      </section>
+
+      <section>
+        <h2>4. Dados e conteúdos enviados</h2>
+        <p>Você permanece responsável pelos pagamentos, descrições, imagens, PDFs, arquivos CSV/OFX, extratos bancários, faturas de cartão e demais conteúdos enviados. Ao fazer upload, declara possuir autorização para armazená-los e garante que não violam direitos de terceiros nem contêm conteúdo ilícito.</p>
+        <p>Você concede ao serviço autorização limitada, não exclusiva e pelo período necessário para armazenar, processar, exibir e transmitir esses conteúdos exclusivamente para executar as funcionalidades solicitadas, incluindo leitura de extratos, extração de lançamentos de faturas e criação de pagamentos a partir dos arquivos enviados.</p>
+      </section>
+
+      <section>
+        <h2>5. Uso adequado</h2>
+        <p>É proibido utilizar a plataforma para fraude, violação de direitos, envio de malware, tentativa de acesso indevido, exploração de vulnerabilidades, automação abusiva, sobrecarga de infraestrutura ou armazenamento de materiais ilegais.</p>
+        <p>Contas poderão ser restringidas ou suspensas quando houver risco de segurança, violação destes Termos, ordem legal ou necessidade de proteção da plataforma e de seus usuários, observados os direitos aplicáveis.</p>
+      </section>
+
+      <section>
+        <h2>6. Lembretes, relatórios e insights</h2>
+        <p>Lembretes e relatórios dependem de dados cadastrados corretamente, disponibilidade de internet, email, Redis, Celery e fornecedores de infraestrutura. O usuário continua responsável por verificar datas, valores e efetuar pagamentos no prazo.</p>
+        <p>Insights automatizados e lançamentos extraídos de arquivos podem conter imprecisões e não devem ser usados como única base para decisões financeiras relevantes. Revise sempre os dados de origem, especialmente antes de confirmar importações de extrato ou fatura, e procure profissional qualificado quando necessário.</p>
+      </section>
+
+      <section>
+        <h2>7. Serviços de terceiros</h2>
+        <p>A plataforma pode utilizar Google OAuth, Gemini, serviços de email, hospedagem, banco de dados e outras tecnologias necessárias. A disponibilidade e o funcionamento desses recursos podem depender dos respectivos fornecedores. Quando aplicável, textos extraídos de faturas podem ser processados por inteligência artificial para tentar estruturar lançamentos antes da confirmação pelo usuário.</p>
+      </section>
+
+      <section>
+        <h2>8. Disponibilidade e alterações</h2>
+        <p>Empregamos esforços razoáveis para manter o serviço disponível e seguro, mas não garantimos operação ininterrupta. Manutenções, atualizações, falhas externas ou eventos fora de controle podem causar indisponibilidade temporária.</p>
+        <p>Funcionalidades podem ser modificadas, adicionadas ou descontinuadas. Alterações materiais nestes Termos serão informadas de forma adequada e poderão exigir novo aceite.</p>
+      </section>
+
+      <section>
+        <h2>9. Propriedade intelectual</h2>
+        <p>A marca, identidade visual, código, interface e conteúdos próprios do Gastou, Lembrou! são protegidos pela legislação aplicável. Estes Termos não transferem direitos de propriedade intelectual ao usuário.</p>
+      </section>
+
+      <section>
+        <h2>10. Responsabilidade</h2>
+        <p>A responsabilidade será apurada conforme a legislação brasileira. A plataforma não responde por dados incorretos inseridos pelo usuário, perda de prazos causada por informações incompletas, indisponibilidade de terceiros ou decisões tomadas exclusivamente com base em insights automatizados, sem prejuízo das responsabilidades que não possam ser legalmente excluídas.</p>
+      </section>
+
+      <section>
+        <h2>11. Encerramento</h2>
+        <p>Você pode deixar de usar o serviço e solicitar o encerramento da conta pelos canais de suporte. Dados poderão ser conservados pelo período necessário ao cumprimento de obrigações legais, exercício de direitos e prevenção a fraudes, conforme a Política de Privacidade.</p>
+      </section>
+
+      <section>
+        <h2>12. Lei aplicável e contato</h2>
+        <p>Aplicam-se as leis da República Federativa do Brasil, incluindo o Código de Defesa do Consumidor quando pertinente. Fica preservado o foro legalmente competente, inclusive o do domicílio do consumidor quando aplicável.</p>
+        <p>Dúvidas podem ser encaminhadas para <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
+      </section>
+    </div>
+  </article>
+
+  <footer class="public-footer">
+    <div><a href="{% url 'core:privacy' %}">Política de Privacidade</a><span>Copyright © Gastou Lembrou 2026</span></div>
+  </footer>
+</main>
+{% endblock %}

@@ -1,0 +1,38 @@
+<div class="modal-card payment-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Cartão de crédito</span>
+      <h2 id="payment-modal-title">Importar fatura do cartão</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal" hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="payment-modal-body">
+      {% if form.non_field_errors %}<div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <section class="payment-form-section" aria-labelledby="credit-card-statement-data">
+        <h3 id="credit-card-statement-data">PDF da fatura</h3>
+        <p class="payment-form-help">
+          O sistema tentará ler o texto da fatura e mostrar uma prévia dos lançamentos antes de criar os pagamentos.
+        </p>
+        <div class="payment-form-grid">
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.statement_file.id_for_label }}">Fatura do cartão</label>
+            {{ form.statement_file }}
+            {{ form.statement_file.errors }}
+            <small class="form-help-text">Formato aceito: PDF com texto extraível.</small>
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-primary" type="submit">
+        <i class="fa-solid fa-magnifying-glass-chart" aria-hidden="true"></i>
+        Analisar fatura
+      </button>
+    </footer>
+  </form>
+</div>

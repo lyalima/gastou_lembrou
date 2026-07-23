@@ -1,0 +1,39 @@
+<div class="modal-card payment-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Organização</span>
+      <h2 id="payment-modal-title">Nova categoria</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <form class="payment-modal-form" method="post" hx-post="{{ request.path }}" hx-target="#modal">
+    {% csrf_token %}
+    <div class="payment-modal-body">
+      {% if form.non_field_errors %}<div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <section class="payment-form-section" aria-labelledby="category-data">
+        <h3 id="category-data">Dados da categoria</h3>
+        <div class="payment-form-grid">
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.name.id_for_label }}">Nome</label>
+            {{ form.name }}
+            {{ form.name.errors }}
+          </div>
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Descrição</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-primary" type="submit">
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        Salvar categoria
+      </button>
+    </footer>
+  </form>
+</div>

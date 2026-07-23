@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Política de Privacidade | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="public-shell legal-page" id="main-content">
+  <header class="public-topbar">
+    <div class="public-topbar-inner public-topbar-legal">
+      <a href="{% url 'core:home' %}" class="public-brand">
+        <img src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="">
+        <span>Gastou, Lembrou!</span>
+      </a>
+      <a class="public-secondary-button" href="{% url 'account_signup' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar </a>
+    </div>
+  </header>
+
+  <article class="legal-content">
+    <header class="legal-intro">
+      <p class="legal-version">Versão {{ privacy_version }} <span>·</span> Vigência em {{ privacy_effective_date }}</p>
+      <h1>Política de Privacidade</h1>
+      <p>Esta Política explica como o Gastou, Lembrou! trata dados pessoais em conformidade com a Lei nº 13.709/2018, a Lei Geral de Proteção de Dados Pessoais (LGPD).</p>
+    </header>
+
+    <div class="legal-document">
+      <section>
+        <h2>1. Controlador e contato</h2>
+        <p>O responsável pela operação do Gastou, Lembrou! atua como controlador dos dados pessoais tratados para disponibilização da plataforma. Solicitações de privacidade e exercício de direitos podem ser enviadas para <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
+      </section>
+
+      <section>
+        <h2>2. Dados tratados</h2>
+        <ul>
+          <li><strong>Conta:</strong> email, senha protegida por hash, identificadores de autenticação Google, status de verificação e datas de criação.</li>
+          <li><strong>Perfil:</strong> telefone, país/código telefônico e CPF quando fornecido.</li>
+          <li><strong>Dados financeiros inseridos:</strong> títulos, descrições, valores, categorias, formas de pagamento, datas, agendamentos e indicação de parcelamento quando aplicável.</li>
+          <li><strong>Arquivos financeiros e de suporte:</strong> imagens JPG/PNG, documentos PDF, extratos CSV/OFX, faturas de cartão de crédito em PDF, notas fiscais, comprovantes e screenshots de suporte.</li>
+          <li><strong>Suporte e comunicações:</strong> mensagens, anexos e registros de emails transacionais.</li>
+          <li><strong>Dados técnicos e de segurança:</strong> endereço IP e user-agent no aceite legal, logs, sessão e preferências locais, como tema claro/escuro.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>3. Finalidades e bases legais</h2>
+        <p>Os dados são tratados para criar e autenticar contas, executar as funcionalidades contratadas, organizar pagamentos, armazenar arquivos, importar extratos, extrair lançamentos de faturas, enviar lembretes e relatórios, prestar suporte, proteger a plataforma, cumprir obrigações legais e exercer direitos.</p>
+        <p>Conforme o caso, o tratamento poderá se basear na execução de contrato e procedimentos preliminares, cumprimento de obrigação legal ou regulatória, exercício regular de direitos, legítimo interesse com avaliação dos direitos do titular e consentimento quando essa for a base adequada. A ciência desta Política não substitui consentimentos específicos exigidos por lei.</p>
+      </section>
+
+      <section>
+        <h2>4. Inteligência artificial e decisões automatizadas</h2>
+        <p>O painel pode enviar ao Gemini métricas financeiras agregadas para gerar insights. Quando um pagamento é criado sem categoria, o título do pagamento e a lista de categorias disponíveis também podem ser enviados para sugerir a classificação. Na importação de faturas de cartão, textos extraídos do PDF podem ser enviados para tentar estruturar lançamentos em data, descrição e valor antes da confirmação pelo usuário. A integração foi projetada para não enviar email, CPF, telefone nem arquivos completos de notas fiscais nesses fluxos, salvo quando a própria funcionalidade exigir tratamento do conteúdo textual extraído.</p>
+        <p>Os resultados são informativos e não produzem, por si só, decisões com efeitos jurídicos ou impacto significativo sobre o usuário. Categorias sugeridas podem ser revisadas e alteradas posteriormente pelo titular.</p>
+        <p>Quando a integração externa não estiver disponível, a plataforma poderá gerar análise automática local baseada nas mesmas métricas.</p>
+      </section>
+
+      <section>
+        <h2>5. Compartilhamento e operadores</h2>
+        <p>Dados poderão ser tratados por fornecedores de infraestrutura estritamente necessários, como hospedagem, banco de dados, armazenamento de arquivos, Redis/Celery, email, Google OAuth e Gemini. Também poderão ser compartilhados para cumprimento de obrigação legal, ordem de autoridade competente, proteção de direitos ou investigação de fraude e incidentes.</p>
+        <p>Não comercializamos dados pessoais.</p>
+      </section>
+
+      <section>
+        <h2>6. Transferência internacional</h2>
+        <p>Alguns fornecedores, como Google e serviços de infraestrutura, podem processar dados fora do Brasil. Nesses casos, buscamos adotar mecanismos e salvaguardas compatíveis com a LGPD e limitar o compartilhamento ao necessário para a funcionalidade utilizada.</p>
+      </section>
+
+      <section>
+        <h2>7. Retenção e eliminação</h2>
+        <p>Dados são mantidos enquanto a conta estiver ativa e pelo tempo necessário às finalidades informadas. Após solicitação de exclusão ou encerramento, poderão ser eliminados ou anonimizados, ressalvadas hipóteses de conservação para obrigação legal, exercício de direitos, prevenção a fraudes, segurança e demais bases permitidas pela LGPD.</p>
+        <p>Arquivos e registros vinculados à conta, incluindo notas fiscais, comprovantes, extratos e faturas de cartão, são excluídos conforme os processos técnicos aplicáveis e ciclos de backup.</p>
+      </section>
+
+      <section>
+        <h2>8. Segurança</h2>
+        <p>Adotamos medidas técnicas e administrativas proporcionais ao contexto, incluindo autenticação, controle de acesso por usuário, validação de uploads, proteção de senhas, isolamento de consultas e registros de envio. Nenhum ambiente é totalmente imune a riscos; incidentes relevantes serão tratados conforme a legislação e orientações da ANPD.</p>
+      </section>
+
+      <section>
+        <h2>9. Direitos do titular</h2>
+        <p>Nos termos da LGPD, você pode solicitar confirmação do tratamento, acesso, correção, anonimização, bloqueio ou eliminação de dados inadequados, portabilidade quando regulamentada, informação sobre compartilhamentos, revisão de decisões automatizadas quando aplicável e demais direitos previstos em lei.</p>
+        <p>Solicitações serão avaliadas com confirmação de identidade e poderão ser limitadas quando houver obrigação legal de conservação ou outra hipótese legítima prevista na LGPD.</p>
+      </section>
+
+      <section>
+        <h2>10. Cookies, sessão e armazenamento local</h2>
+        <p>A plataforma utiliza cookies estritamente necessários para autenticação, sessão, segurança e proteção contra requisições indevidas. Preferências como o modo claro/escuro podem ser armazenadas localmente no navegador. Não há, nesta versão, publicidade comportamental ou venda de perfis.</p>
+      </section>
+
+      <section>
+        <h2>11. Crianças e adolescentes</h2>
+        <p>O serviço não é direcionado intencionalmente a crianças. O tratamento de dados de menores deve observar seu melhor interesse e as autorizações exigidas pela legislação brasileira.</p>
+      </section>
+
+      <section>
+        <h2>12. Atualizações</h2>
+        <p>Esta Política pode ser atualizada para refletir mudanças legais, técnicas ou funcionais. Alterações relevantes serão informadas de forma apropriada e, quando necessário, será solicitado novo aceite ou ciência.</p>
+      </section>
+    </div>
+  </article>
+
+  <footer class="public-footer">
+    <div><a href="{% url 'core:terms' %}">Termos de Uso</a><span>Copyright © Gastou Lembrou 2026</span></div>
+  </footer>
+</main>
+{% endblock %}

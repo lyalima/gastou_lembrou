@@ -1,0 +1,78 @@
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://gastou_lembrou:gastou_lembrou@db:5432/gastou_lembrou
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CACHE_URL: redis://redis:6379/2
+      WAIT_FOR_DB: "1"
+      DB_HOST: db
+      DB_PORT: "5432"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    build: .
+    command: celery -A config worker -l info --pool=solo
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://gastou_lembrou:gastou_lembrou@db:5432/gastou_lembrou
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CACHE_URL: redis://redis:6379/2
+      WAIT_FOR_DB: "1"
+      DB_HOST: db
+      DB_PORT: "5432"
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    depends_on:
+      - db
+      - redis
+
+  celery_beat:
+    build: .
+    command: celery -A config beat -l info --schedule=/tmp/celerybeat-schedule
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://gastou_lembrou:gastou_lembrou@db:5432/gastou_lembrou
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CACHE_URL: redis://redis:6379/2
+      WAIT_FOR_DB: "1"
+      DB_HOST: db
+      DB_PORT: "5432"
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gastou_lembrou
+      POSTGRES_USER: gastou_lembrou
+      POSTGRES_PASSWORD: gastou_lembrou
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  postgres_data:
+  media_data:

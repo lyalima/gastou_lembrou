@@ -1,0 +1,13 @@
+{% if widget.is_initial %}
+  <div class="receipt-file-current">
+    <span class="text-slate-500">atual:</span>
+    <a href="{{ widget.value.url }}" target="_blank" rel="noopener">{{ widget.value }}</a>
+  </div>
+  {% if not widget.required %}
+    <label class="receipt-file-clear" for="{{ widget.checkbox_id }}">
+      <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}">
+      <span>{{ widget.clear_checkbox_label }}</span>
+    </label>
+  {% endif %}
+{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>

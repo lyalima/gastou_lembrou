@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Confirme seu email | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="auth-shell" id="main-content">
+  <section class="auth-card auth-status-card">
+    {% include "partials/auth_brand.html" %}
+    <span class="auth-status-icon auth-status-success"><i class="fa-regular fa-envelope" aria-hidden="true"></i></span>
+    <h1>Confirme seu email</h1>
+    <p>Enviamos uma mensagem para o email informado no cadastro. Abra sua caixa de entrada e siga as instruções para ativar sua conta.</p>
+    <div class="auth-note">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <div><strong>Não encontrou?</strong><p>Confira a pasta de spam ou lixo eletrônico.</p></div>
+    </div>
+    <div class="auth-status-actions">
+      <a class="btn-primary w-full" href="{% url 'account_login' %}">Ir para login</a>
+      <a class="btn-secondary w-full" href="{% url 'core:home' %}">Voltar para home</a>
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Concluir cadastro | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="auth-shell" id="main-content">
+  <form method="post" class="auth-card auth-card-wide">
+    {% csrf_token %}
+    {% include "partials/auth_brand.html" %}
+    <header class="auth-heading">
+      <span class="auth-kicker">Última etapa</span>
+      <h1>Concluir cadastro</h1>
+      <p>Confirme seu email e leia os documentos legais antes de criar sua conta com Google.</p>
+    </header>
+    {% if form.non_field_errors %}
+      <div class="auth-alert auth-alert-error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>{{ form.non_field_errors }}</span></div>
+    {% endif %}
+    <div class="auth-fields">
+      <div class="form-field"><label class="form-label" for="{{ form.email.id_for_label }}">Email</label>{{ form.email }}{{ form.email.errors }}</div>
+    </div>
+    <div class="auth-consents">
+      <label class="legal-consent">{{ form.accept_terms }} <span>{{ form.accept_terms.label }} </span></label>
+      {{ form.accept_terms.errors }}
+      <label class="legal-consent">{{ form.acknowledge_privacy }} <span>{{ form.acknowledge_privacy.label }} </span></label>
+      {{ form.acknowledge_privacy.errors }}
+    </div>
+    <button class="btn-primary auth-submit" type="submit"><i class="fa-brands fa-google" aria-hidden="true"></i> Criar conta e continuar</button>
+    <a class="btn-secondary auth-secondary-action" href="{% url 'core:home' %}">Não aceito</a>
+  </form>
+</main>
+{% endblock %}

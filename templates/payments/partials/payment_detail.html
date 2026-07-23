@@ -1,0 +1,71 @@
+<div class="modal-card payment-modal payment-detail-modal">
+  <header class="payment-modal-header">
+    <div class="payment-detail-heading">
+      <span class="payment-modal-kicker">Detalhes do pagamento</span>
+      <h2 id="payment-modal-title">{{ object.title }}</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <div class="payment-modal-body">
+    <div class="payment-detail-summary">
+      <div>
+        <span class="payment-category-tag">{% if object.category %}{{ object.category.name }}{% else %}<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Categorização automática pendente{% endif %}</span>
+        {% if object.scheduled_date %}<span class="payment-scheduled-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Agendado</span>{% endif %}
+        {% if object.is_credit_card_bill %}<span class="payment-bill-tag"><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Fatura</span>{% endif %}
+        {% if object.is_installment %}<span class="payment-installment-tag"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Parcelado</span>{% endif %}
+      </div>
+      <strong>R$ {{ object.amount|floatformat:2 }}</strong>
+    </div>
+    <dl class="payment-detail-grid">
+      <div>
+        <dt><i class="fa-solid fa-tags" aria-hidden="true"></i> Tipo de lançamento</dt>
+        <dd>{{ object.get_kind_display }}</dd>
+      </div>
+      <div>
+        <dt><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Forma de Pagamento</dt>
+        <dd>{{ object.payment_method.name|default:"-" }}</dd>
+      </div>
+      <div>
+        <dt><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Data de pagamento</dt>
+        <dd>{% if object.payment_date %}{{ object.payment_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+      </div>
+      <div>
+        <dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Data agendada</dt>
+        <dd>{% if object.scheduled_date %}{{ object.scheduled_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+      </div>
+      {% if object.description %}
+        <div class="payment-detail-description">
+          <dt><i class="fa-regular fa-note-sticky" aria-hidden="true"></i> Descrição</dt>
+          <dd>{{ object.description }}</dd>
+        </div>
+      {% endif %}
+    </dl>
+    {% if object.image %}
+      <section class="payment-receipt-section" aria-labelledby="receipt-title">
+        <h3 id="receipt-title">Nota fiscal ou comprovante</h3>
+        {% if object.receipt_is_pdf %}
+          <a class="btn-secondary" href="{% url 'payments:receipt' object.pk %}" target="_blank" rel="noopener">
+            <i class="fa-regular fa-file-pdf" aria-hidden="true"></i>
+            Abrir arquivo PDF
+          </a>
+        {% else %}
+          <div class="receipt-preview">
+            <img src="{% url 'payments:receipt' object.pk %}" width="1200" height="900" alt="Nota fiscal ou comprovante do pagamento" loading="lazy" decoding="async">
+            <a class="receipt-fullscreen-btn" href="{% url 'payments:receipt' object.pk %}" target="_blank" rel="noopener" title="Visualizar em tela cheia" aria-label="Visualizar nota fiscal em tela cheia">
+              <i class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></i>
+            </a>
+          </div>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+  <footer class="payment-modal-footer">
+    <button class="btn-secondary" type="button" data-close-modal>Fechar</button>
+    <button class="btn-primary" type="button" hx-get="{% url 'payments:update' object.pk %}" hx-target="#modal" hx-swap="innerHTML">
+      <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+      Editar pagamento
+    </button>
+  </footer>
+</div>

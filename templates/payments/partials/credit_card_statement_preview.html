@@ -1,0 +1,72 @@
+<div class="modal-card payment-modal credit-card-statement-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Prévia da fatura</span>
+      <h2 id="payment-modal-title">Lançamentos detectados</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+
+  <div class="payment-modal-body">
+    <section class="payment-form-section" aria-labelledby="credit-card-preview-summary">
+      <h3 id="credit-card-preview-summary">Resultado da leitura</h3>
+      {% if statement.status == "failed" %}
+        <div class="payment-form-alert" role="alert">{{ statement.error_message }}</div>
+        <p class="payment-form-help">Esse PDF foi salvo, mas nenhum pagamento foi criado. Tente uma fatura baixada diretamente do app ou internet banking, sem ser captura de tela.</p>
+      {% else %}
+        <p class="payment-form-help">
+          Revise os lançamentos antes de importar. Eles serão criados como gastos comuns com forma de pagamento "Cartão de Crédito".
+        </p>
+        <p class="form-help-text">Origem da leitura: {{ statement.get_parser_source_display }}.</p>
+      {% endif %}
+    </section>
+
+    {% if items %}
+      <form class="payment-modal-form" method="post" hx-post="{% url 'payments:credit_card_statement_confirm' statement.pk %}" hx-target="#modal" hx-swap="innerHTML">
+        {% csrf_token %}
+        <div class="credit-card-statement-list" role="list" aria-label="Lançamentos detectados na fatura">
+          {% for item in items %}
+            <article class="credit-card-statement-item" role="listitem">
+              <label class="credit-card-statement-check">
+                <input type="checkbox" name="items" value="{{ item.pk }}" checked>
+                <span>Importar</span>
+              </label>
+              <div class="credit-card-statement-grid">
+                <div class="form-field credit-card-statement-title">
+                  <label class="form-label" for="title_{{ item.pk }}">Descrição</label>
+                  <input class="form-input" id="title_{{ item.pk }}" name="title_{{ item.pk }}" value="{{ item.title }}">
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="date_{{ item.pk }}">Data</label>
+                  <input class="form-input" id="date_{{ item.pk }}" name="date_{{ item.pk }}" type="date" value="{{ item.payment_date|date:'Y-m-d' }}">
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="amount_{{ item.pk }}">Valor</label>
+                  <input class="form-input" id="amount_{{ item.pk }}" name="amount_{{ item.pk }}" value="{{ item.amount|floatformat:2 }}">
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="category_{{ item.pk }}">Categoria</label>
+                  <select class="form-input" id="category_{{ item.pk }}" name="category_{{ item.pk }}">
+                    <option value="">Selecionar automaticamente</option>
+                    {% for category in categories %}
+                      <option value="{{ category.pk }}" {% if item.category_id == category.pk %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        <footer class="payment-modal-footer credit-card-statement-footer">
+          <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+          <button class="btn-primary" type="submit">
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+            Confirmar importação
+          </button>
+        </footer>
+      </form>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Aceite dos termos atualizados{% endblock %}
+{% block content %}
+<div class="workspace-page profile-page">
+  <header class="workspace-header">
+    <div>
+      <p class="workspace-eyebrow">Atualização legal</p>
+      <h1>Termos atualizados</h1>
+      <p class="workspace-subtitle">Para continuar usando o Gastou, Lembrou!, leia e aceite as versões vigentes.</p>
+    </div>
+  </header>
+
+  <section class="workspace-panel legal-consent-panel" aria-labelledby="legal-acceptance-title">
+    <div class="workspace-panel-heading">
+      <div>
+        <h2 id="legal-acceptance-title"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Novo aceite necessário</h2>
+        <p>Versões vigentes: Termos {{ terms_version }} e Privacidade {{ privacy_version }}.</p>
+      </div>
+    </div>
+    <p class="workspace-empty-copy">
+      Os documentos foram atualizados para refletir novas funcionalidades, incluindo importação de extratos bancários,
+      importação de faturas de cartão em PDF e guarda dos arquivos enviados para execução do serviço.
+    </p>
+    <form method="post" class="workspace-form">
+      {% csrf_token %}
+      <div class="legal-consent-stack">
+        <label class="legal-consent">{{ form.accept_terms }} <span>{{ form.accept_terms.label }}</span></label>
+        {{ form.accept_terms.errors }}
+        <label class="legal-consent">{{ form.acknowledge_privacy }} <span>{{ form.acknowledge_privacy.label }}</span></label>
+        {{ form.acknowledge_privacy.errors }}
+      </div>
+      <div class="workspace-form-actions">
+        <a class="btn-secondary" href="{% url 'core:terms' %}" target="_blank" rel="noopener">Ler termos</a>
+        <a class="btn-secondary" href="{% url 'core:privacy' %}" target="_blank" rel="noopener">Ler privacidade</a>
+        <button class="btn-primary" type="submit">
+          <i class="fa-solid fa-check" aria-hidden="true"></i>
+          Aceitar e continuar
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

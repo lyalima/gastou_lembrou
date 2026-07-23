@@ -1,0 +1,30 @@
+<div class="modal-card payment-modal payment-delete-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker payment-danger-text">Ação permanente</span>
+      <h2 id="payment-modal-title">Excluir pagamento?</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <form method="post" hx-post="{{ request.path }}" hx-target="#modal">
+    {% csrf_token %}
+    <div class="payment-modal-body">
+      <div class="payment-delete-content">
+        <span class="payment-delete-icon"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></span>
+        <div>
+          <p>Esta ação removerá permanentemente o pagamento <strong>“{{ object.title }}”</strong>.</p>
+          <span>Essa operação não poderá ser desfeita.</span>
+        </div>
+      </div>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-danger" type="submit">
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+        Excluir pagamento
+      </button>
+    </footer>
+  </form>
+</div>

@@ -1,0 +1,11 @@
+Olá,
+
+Recebemos um cadastro no Gastou Lembrou usando este endereço de email.
+
+Para ativar sua conta, acesse o link abaixo:
+
+{{ activate_url }}
+
+Se você não criou essa conta, ignore esta mensagem.
+
+Equipe Gastou Lembrou

@@ -1,0 +1,38 @@
+<div class="modal-card payment-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Importação</span>
+      <h2 id="payment-modal-title">Importar extrato bancário</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal">
+    {% csrf_token %}
+    <div class="payment-modal-body">
+      {% if form.non_field_errors %}<div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <section class="payment-form-section" aria-labelledby="statement-import-data">
+        <h3 id="statement-import-data">Arquivo do extrato</h3>
+        <p class="payment-form-help">
+          Envie um arquivo CSV ou OFX exportado pelo banco. O sistema cria pagamentos apenas para despesas, ignora entradas e evita duplicar transações já importadas.
+        </p>
+        <div class="payment-form-grid">
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.statement_file.id_for_label }}">Extrato bancário</label>
+            {{ form.statement_file }}
+            {{ form.statement_file.errors }}
+            <small class="form-help-text">Formatos aceitos: CSV ou OFX.</small>
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-primary" type="submit">
+        <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+        Importar pagamentos
+      </button>
+    </footer>
+  </form>
+</div>

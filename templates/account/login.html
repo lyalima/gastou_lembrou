@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+{% load socialaccount %}
+{% block title %}Entrar | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="auth-shell" id="main-content">
+  <form method="post" class="auth-card">
+    {% csrf_token %}
+    {% include "partials/auth_brand.html" %}
+    <header class="auth-heading">
+      <span class="auth-kicker">Bem-vindo de volta</span>
+      <h1>Entrar</h1>
+      <p>Acesse seus pagamentos, notas e lembretes.</p>
+    </header>
+    {% if form.non_field_errors %}
+      <div class="auth-alert auth-alert-error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span>{{ form.non_field_errors }}</span></div>
+    {% endif %}
+    <div class="auth-fields">
+      <div class="form-field"><label class="form-label" for="{{ form.login.id_for_label }}">Email</label>{{ form.login }}{{ form.login.errors }}</div>
+      <div class="form-field">
+        <label class="form-label" for="{{ form.password.id_for_label }}">Senha</label>
+        <span class="password-wrap">{{ form.password }}<button type="button" data-toggle-password aria-label="Mostrar senha" title="Mostrar senha"><i class="fa-regular fa-eye" aria-hidden="true"></i></button></span>
+        {{ form.password.errors }}
+      </div>
+    </div>
+    <div class="auth-help-row">
+      <a class="auth-forgot-link" href="{% url 'account_reset_password' %}">
+        <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+        <span>Esqueci minha senha</span>
+      </a>
+    </div>
+    <button class="btn-primary auth-submit" type="submit"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Entrar</button>
+    <div class="auth-divider"><span>ou</span></div>
+    {% if google_oauth_configured %}
+      <a class="btn-secondary auth-google" href="{% provider_login_url 'google' %}"><i class="fa-brands fa-google" aria-hidden="true"></i> Entrar com Google</a>
+    {% else %}
+      <span class="auth-provider-disabled"><i class="fa-brands fa-google" aria-hidden="true"></i> Google OAuth aguardando configuração</span>
+    {% endif %}
+    <p class="auth-switch">Ainda não tem conta? <a href="{% url 'account_signup' %}">Cadastre-se</a></p>
+    <footer class="auth-legal-links"><a href="{% url 'core:terms' %}">Termos de Uso</a><span>·</span><a href="{% url 'core:privacy' %}">Política de Privacidade</a></footer>
+  </form>
+</main>
+{% endblock %}

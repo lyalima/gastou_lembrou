@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d6b5a">
+  <meta name="application-name" content="Gastou Lembrou">
+  <meta name="apple-mobile-web-app-title" content="Gastou Lembrou">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>{% block title %}Gastou Lembrou{% endblock %}</title>
+  <link rel="manifest" href="{% url 'core:manifest' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/gastou-lembrou-logo.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/gastou-lembrou-logo.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.1/build/css/intlTelInput.css">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script>
+    try {
+      const storedTheme = localStorage.getItem("gastou-lembrou-theme");
+      if (storedTheme === "dark") document.documentElement.dataset.theme = "dark";
+    } catch (error) {}
+  </script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900" {% if user.is_authenticated %}data-authenticated="true"{% endif %}>
+  <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+  {% if user.is_authenticated and request.resolver_match.url_name != "terms" and request.resolver_match.url_name != "privacy" and request.resolver_match.url_name != "account_logout" %}
+    <div class="min-h-screen md:flex" data-auth-shell>
+      {% include "partials/sidebar.html" %}
+      <main class="flex-1 p-4 md:p-8" id="main-content">
+        {% include "partials/messages.html" %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  {% else %}
+    {% include "partials/messages.html" %}
+    {% block public_content %}{% endblock %}
+  {% endif %}
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1"></div>
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.1/build/js/intlTelInput.min.js"></script>
+  <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<div class="modal-card payment-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">{% if object %}Atualização{% else %}Cadastro{% endif %}</span>
+      <h2 id="payment-modal-title">{% if object %}Editar pagamento{% else %}Novo pagamento{% endif %}</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal">
+    {% csrf_token %}
+    <div class="payment-modal-body">
+      {% if form.non_field_errors %}
+        <div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <section class="payment-form-section" aria-labelledby="payment-main-data">
+        <h3 id="payment-main-data">Dados principais</h3>
+        <div class="payment-form-grid">
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.title.id_for_label }}">Título</label>
+            {{ form.title }}
+            {{ form.title.errors }}
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="{{ form.category.id_for_label }}">Categoria</label>
+            {{ form.category }}
+            {{ form.category.errors }}
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="{{ form.payment_method.id_for_label }}">Forma de Pagamento</label>
+            {{ form.payment_method }}
+            {{ form.payment_method.errors }}
+          </div>
+          <div class="form-field payment-form-full installment-field{% if not form.show_installment_field %} is-hidden{% endif %}" data-installment-field>
+            <label class="payment-checkbox-label" for="{{ form.is_installment.id_for_label }}">
+              {{ form.is_installment }}
+              <span>Este gasto foi parcelado</span>
+            </label>
+            {{ form.is_installment.errors }}
+          </div>
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.kind.id_for_label }}">Tipo de lançamento</label>
+            {{ form.kind }}
+            {{ form.kind.errors }}
+            <small class="form-help-text">Use “Pagamento de fatura” para quitar cartão de crédito sem duplicar os gastos no dashboard.</small>
+          </div>
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Descrição</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="payment-form-section" aria-labelledby="payment-value-dates">
+        <h3 id="payment-value-dates">Valor e datas</h3>
+        <div class="payment-form-grid">
+          <div class="form-field payment-form-full">
+            <label class="form-label" for="{{ form.amount.id_for_label }}">Valor</label>
+            <span class="currency-field">
+              <span class="currency-prefix">R$</span>
+              {{ form.amount }}
+            </span>
+            {{ form.amount.errors }}
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="{{ form.payment_date.id_for_label }}">Data do pagamento</label>
+            {{ form.payment_date }}
+            {{ form.payment_date.errors }}
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="{{ form.scheduled_date.id_for_label }}">Data agendada</label>
+            {{ form.scheduled_date }}
+            {{ form.scheduled_date.errors }}
+          </div>
+        </div>
+      </section>
+
+      <section class="payment-form-section" aria-labelledby="payment-receipt">
+        <h3 id="payment-receipt">Comprovante</h3>
+        <div class="form-field">
+          <label class="form-label" for="{{ form.image.id_for_label }}">Nota fiscal ou comprovante (JPG, PNG ou PDF)</label>
+          {{ form.image }}
+          {{ form.image.errors }}
+        </div>
+      </section>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-primary" type="submit">
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        Salvar pagamento
+      </button>
+    </footer>
+  </form>
+</div>

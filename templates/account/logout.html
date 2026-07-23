@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Sair | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="auth-shell" id="main-content">
+  <form method="post" class="auth-card auth-status-card">
+    {% csrf_token %}
+    {% include "partials/auth_brand.html" %}
+    <span class="auth-status-icon auth-status-neutral"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i></span>
+    <h1>Sair da conta?</h1>
+    <p>Você poderá voltar quando quiser.</p>
+    <div class="auth-status-actions">
+      <button class="btn-primary w-full" type="submit">Sair</button>
+      <a class="btn-secondary w-full" href="{% url 'payments:list' %}">Cancelar</a>
+    </div>
+  </form>
+</main>
+{% endblock %}

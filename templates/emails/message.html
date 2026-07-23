@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+{% block email_content %}
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="background:#ffffff !important;background-color:#ffffff !important;color:#10231f !important;border-collapse:collapse;">
+    <tr>
+      <td bgcolor="#ffffff" style="background:#ffffff !important;background-color:#ffffff !important;color:#10231f !important;">
+        <h1 style="margin:0 0 18px;color:#10231f !important;font-size:24px;line-height:1.25;font-weight:800;">{{ title }}</h1>
+        <div style="color:#51625d !important;font-size:16px;line-height:1.7;white-space:pre-line;">{{ body }}</div>
+      </td>
+    </tr>
+  </table>
+{% endblock %}

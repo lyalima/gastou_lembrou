@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Confirmar email | Gastou, Lembrou!{% endblock %}
+{% block public_content %}
+<main class="auth-shell" id="main-content">
+  <section class="auth-card auth-status-card">
+    {% include "partials/auth_brand.html" %}
+    {% if confirmation %}
+      {% if can_confirm %}
+        <span class="auth-status-icon auth-status-success"><i class="fa-solid fa-envelope-circle-check" aria-hidden="true"></i></span>
+        <h1>Confirmar email</h1>
+        <p>Confirme que <strong>{{ confirmation.email_address.email }}</strong> é o email da sua conta no Gastou, Lembrou!</p>
+        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="auth-status-actions">
+          {% csrf_token %}
+          {{ redirect_field }}
+          <button class="btn-primary w-full" type="submit">Confirmar e entrar</button>
+        </form>
+      {% else %}
+        <span class="auth-status-icon auth-status-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+        <h1>Email já confirmado</h1>
+        <p>Este endereço já foi confirmado por outra conta.</p>
+        <div class="auth-status-actions"><a class="btn-secondary w-full" href="{% url 'account_login' %}">Ir para login</a></div>
+      {% endif %}
+    {% else %}
+      <span class="auth-status-icon auth-status-warning"><i class="fa-solid fa-link-slash" aria-hidden="true"></i></span>
+      <h1>Link inválido ou expirado</h1>
+      <p>Solicite um novo email de confirmação fazendo login novamente.</p>
+      <div class="auth-status-actions"><a class="btn-primary w-full" href="{% url 'account_login' %}">Ir para login</a></div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

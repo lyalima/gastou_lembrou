@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sem conexão | Gastou, Lembrou!{% endblock %}
+
+{% block public_content %}
+<main class="public-shell legal-page" id="main-content">
+  <header class="public-topbar">
+    <div class="public-topbar-inner public-topbar-legal">
+      <a href="{% url 'core:home' %}" class="public-brand">
+        <img src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="">
+        <span>Gastou, Lembrou!</span>
+      </a>
+    </div>
+  </header>
+
+  <section class="offline-panel" aria-labelledby="offline-title">
+    <div class="offline-icon" aria-hidden="true">
+      <i class="fa-solid fa-wifi"></i>
+    </div>
+    <h1 id="offline-title">Você está offline</h1>
+    <p>Não foi possível carregar esta página agora. Confira sua conexão e tente novamente.</p>
+    <a class="public-primary-button" href="{% url 'core:home' %}">
+      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+      Tentar novamente
+    </a>
+  </section>
+
+  <footer class="public-footer">
+    <div><span>Copyright © Gastou Lembrou 2026</span></div>
+  </footer>
+</main>
+{% endblock %}
