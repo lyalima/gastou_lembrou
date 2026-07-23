@@ -200,4 +200,4 @@ databases:
   - name: gastou-lembrou-db
     databaseName: gastou_lembrou
     user: gastou_lembrou
-    plan: starter
+    plan: basic-256mb

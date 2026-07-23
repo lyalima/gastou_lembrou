@@ -48,7 +48,7 @@ O Blueprint cria:
 - `gastou-lembrou-web`: web service Docker.
 - `gastou-lembrou-worker`: Celery worker.
 - `gastou-lembrou-beat`: Celery beat.
-- `gastou-lembrou-db`: PostgreSQL.
+- `gastou-lembrou-db`: PostgreSQL no plano `basic-256mb`.
 - `gastou-lembrou-redis`: Render Key Value/Redis.
 
 O Key Value fica com `ipAllowList: []`, ou seja, sem acesso externo publico. Isso
