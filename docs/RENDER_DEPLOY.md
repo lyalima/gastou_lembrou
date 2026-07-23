@@ -51,6 +51,9 @@ O Blueprint cria:
 - `gastou-lembrou-db`: PostgreSQL.
 - `gastou-lembrou-redis`: Render Key Value/Redis.
 
+O Key Value fica com `ipAllowList: []`, ou seja, sem acesso externo publico. Isso
+e intencional: web, worker e beat usam a connection string interna do Render.
+
 ## Opcao 2: Configuracao Manual
 
 Crie os recursos manualmente se quiser mais controle sobre custos e planos.
