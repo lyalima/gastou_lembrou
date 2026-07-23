@@ -13,12 +13,6 @@ if not SECRET_KEY:
     raise ImproperlyConfigured("Defina SECRET_KEY no ambiente de produção.")
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="127.0.0.1,localhost,testserver", cast=Csv())
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
-RENDER_EXTERNAL_HOSTNAME = config("RENDER_EXTERNAL_HOSTNAME", default="")
-RENDER_EXTERNAL_URL = config("RENDER_EXTERNAL_URL", default="")
-if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-if RENDER_EXTERNAL_URL and RENDER_EXTERNAL_URL not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append(RENDER_EXTERNAL_URL)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -147,7 +141,7 @@ STORAGES = {
 }
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
-SITE_URL = config("SITE_URL", default=RENDER_EXTERNAL_URL or "http://127.0.0.1:8000")
+SITE_URL = config("SITE_URL", default="http://127.0.0.1:8000")
 EMAIL_ASSET_BASE_URL = config("EMAIL_ASSET_BASE_URL", default=SITE_URL)
 PROJECT_EMAIL_SITE_NAME = config("PROJECT_EMAIL_SITE_NAME", default="Gastou, Lembrou!")
 GEMINI_API_KEY = config("GEMINI_API_KEY", default="")

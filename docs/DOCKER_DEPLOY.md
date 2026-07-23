@@ -1,6 +1,7 @@
 # Docker e Deploy
 
-Este guia resume como rodar o Gastou Lembrou em Docker para desenvolvimento e como preparar o deploy em produção.
+Este guia resume como rodar o Gastou Lembrou em Docker para desenvolvimento e
+como preparar um deploy generico em producao.
 
 ## Desenvolvimento Local
 
@@ -17,7 +18,7 @@ docker compose exec web python manage.py migrate
 docker compose exec web python manage.py createsuperuser
 ```
 
-Serviços locais:
+Servicos locais:
 
 - Django: `http://127.0.0.1:8000`
 - Postgres: container `db`
@@ -31,9 +32,9 @@ clientes locais, `http://127.0.0.1:8000` funciona; para testes em Gmail/Outlook,
 use um tunel HTTPS publico ou um dominio real. Nao use `web:8000` nessa variavel,
 porque esse endereco so existe dentro da rede do Docker.
 
-## Produção Local Simulada
+## Producao Local Simulada
 
-Use o compose de produção apenas para simular um ambiente mais próximo do deploy:
+Use o compose de producao apenas para simular um ambiente mais proximo do deploy:
 
 ```powershell
 docker compose -f docker-compose.prod.yml up --build
@@ -52,13 +53,13 @@ CSRF_COOKIE_SECURE=False
 SECURE_HSTS_SECONDS=0
 ```
 
-Para produção real com HTTPS, use valores seguros:
+Para producao real com HTTPS, use valores seguros:
 
 ```env
 DEBUG=False
 SECRET_KEY=uma-chave-longa-e-aleatoria
-ALLOWED_HOSTS=seu-app.onrender.com,seu-dominio.com.br
-CSRF_TRUSTED_ORIGINS=https://seu-app.onrender.com,https://seu-dominio.com.br
+ALLOWED_HOSTS=seu-dominio.com.br,www.seu-dominio.com.br
+CSRF_TRUSTED_ORIGINS=https://seu-dominio.com.br,https://www.seu-dominio.com.br
 SITE_URL=https://seu-dominio.com.br
 EMAIL_ASSET_BASE_URL=https://seu-dominio.com.br
 PROJECT_EMAIL_SITE_NAME=Gastou, Lembrou!
@@ -70,14 +71,14 @@ USE_X_FORWARDED_PROTO=True
 USE_WHITENOISE=True
 ```
 
-## Render
+## Producao em Docker
 
-Crie serviços separados usando a mesma imagem Docker:
+Em um deploy real, use servicos separados usando a mesma imagem Docker:
 
-- Web Service:
+- Aplicacao web:
 
 ```bash
-gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120 --access-logfile -
 ```
 
 - Worker:
@@ -92,12 +93,12 @@ celery -A config worker -l info
 celery -A config beat -l info --schedule=/tmp/celerybeat-schedule
 ```
 
-Configure também:
+Configure tambem:
 
 - PostgreSQL gerenciado e `DATABASE_URL`.
-- Redis/Key Value e `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `CACHE_URL`.
+- Redis e `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `CACHE_URL`.
 - SMTP real.
-- Google OAuth com URLs finais do Render/domínio.
+- Google OAuth com URLs finais do dominio.
 
 ## Arquivos Privados
 
@@ -107,4 +108,5 @@ Notas fiscais, comprovantes e faturas devem ser acessados pela rota autenticada:
 /pagamentos/<uuid>/arquivo/
 ```
 
-Em produção, evite servir `media/` como pasta pública. Se usar storage externo, prefira bucket privado ou URLs assinadas.
+Em producao, evite servir `media/` como pasta publica. Se usar storage externo,
+prefira bucket privado ou URLs assinadas.
