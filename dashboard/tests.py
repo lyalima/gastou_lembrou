@@ -9,6 +9,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.legal import PRIVACY_VERSION, TERMS_VERSION
+from accounts.models import LegalAcceptance
 from payments.models import Category, Payment, PaymentMethod
 from .insights import build_insight_dataset, gemini_insights, generate_insights, normalize_pt_br_text
 from .models import FinancialInsightSnapshot, MonthlySpendingGoal, SpendingGoalNotification
@@ -23,6 +25,12 @@ class DashboardTests(TestCase):
         self.user = User.objects.create_user(email="ana@example.com", password="pass12345", email_verified=True)
         self.category = Category.objects.create(name="Mercado")
         self.payment_method = PaymentMethod.objects.create(name="Pix")
+        LegalAcceptance.objects.create(
+            user=self.user,
+            terms_version=TERMS_VERSION,
+            privacy_version=PRIVACY_VERSION,
+            source=LegalAcceptance.Source.EMAIL,
+        )
 
     def test_dashboard_includes_payment_method_metrics(self):
         Payment.objects.create(
@@ -105,7 +113,7 @@ class DashboardTests(TestCase):
         get_response = self.client.get(reverse("dashboard:spending_goal"), HTTP_HX_REQUEST="true")
         post_response = self.client.post(
             reverse("dashboard:spending_goal"),
-            {"amount": "R$ 1.200,00", "alert_threshold": "75"},
+            {"amount": "R$ 1.200,00", "alert_thresholds": ["50", "75"]},
             HTTP_HX_REQUEST="true",
         )
 
@@ -115,7 +123,21 @@ class DashboardTests(TestCase):
         self.assertEqual(post_response.status_code, 204)
         self.assertEqual(post_response["HX-Refresh"], "true")
         self.assertEqual(goal.amount, Decimal("1200.00"))
-        self.assertEqual(goal.alert_threshold, 75)
+        self.assertEqual(goal.alert_thresholds, [50, 75])
+        self.assertEqual(goal.alert_threshold, 50)
+
+    def test_spending_goal_rejects_no_alerts_with_thresholds(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("dashboard:spending_goal"),
+            {"amount": "R$ 1.200,00", "alert_thresholds": ["", "50"]},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Escolha &#x27;Não receber avisos&#x27; ou uma ou mais porcentagens")
+        self.assertFalse(MonthlySpendingGoal.objects.filter(user=self.user).exists())
 
     def test_dashboard_shows_spending_goal_progress_for_selected_month(self):
         MonthlySpendingGoal.objects.create(user=self.user, period_month=date(2026, 5, 1), amount=Decimal("100.00"), alert_threshold=90)
@@ -132,7 +154,7 @@ class DashboardTests(TestCase):
         response = self.client.get(reverse("dashboard:home"), {"month": "2026-05"})
 
         self.assertContains(response, "Meta de gastos mensal")
-        self.assertContains(response, "Acompanhamento da meta em 05/2026")
+        self.assertContains(response, "Meta de gastos mensal - 05/2026")
         self.assertContains(response, "75%")
         self.assertContains(response, "spending-goal-progress-danger")
 
@@ -159,7 +181,7 @@ class DashboardTests(TestCase):
 
         self.assertContains(july_response, "16%")
         self.assertContains(july_response, "R$ 1000,00")
-        self.assertContains(june_response, "Acompanhamento da meta em 06/2026")
+        self.assertContains(june_response, "Meta de gastos mensal - 06/2026")
         self.assertContains(june_response, "R$ 0,00")
         self.assertContains(june_response, "0%")
         self.assertContains(june_response, "Nenhuma meta definida para este mês.")
@@ -173,7 +195,13 @@ class DashboardTests(TestCase):
             amount=Decimal("55.00"),
             payment_date=date(2026, 5, 10),
         )
-        goal = MonthlySpendingGoal.objects.create(user=self.user, period_month=date(2026, 5, 1), amount=Decimal("100.00"), alert_threshold=50)
+        goal = MonthlySpendingGoal.objects.create(
+            user=self.user,
+            period_month=date(2026, 5, 1),
+            amount=Decimal("100.00"),
+            alert_threshold=50,
+            alert_thresholds=[50],
+        )
 
         first_result = check_spending_goal_alert(self.user.pk, "2026-05")
         second_result = check_spending_goal_alert(self.user.pk, "2026-05")
@@ -184,6 +212,33 @@ class DashboardTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("50%", mail.outbox[0].subject)
         self.assertIn("R$ 100,00", mail.outbox[0].body)
+
+    def test_spending_goal_alert_email_is_sent_for_each_selected_reached_threshold(self):
+        Payment.objects.create(
+            user=self.user,
+            category=self.category,
+            payment_method=self.payment_method,
+            title="Feira",
+            amount=Decimal("80.00"),
+            payment_date=date(2026, 5, 10),
+        )
+        goal = MonthlySpendingGoal.objects.create(
+            user=self.user,
+            period_month=date(2026, 5, 1),
+            amount=Decimal("100.00"),
+            alert_thresholds=[50, 75, 90],
+        )
+
+        result = check_spending_goal_alert(self.user.pk, "2026-05")
+
+        self.assertTrue(result)
+        self.assertEqual(
+            list(SpendingGoalNotification.objects.filter(goal=goal, period_key="2026-05").order_by("threshold").values_list("threshold", flat=True)),
+            [50, 75],
+        )
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("50%", mail.outbox[0].subject)
+        self.assertIn("75%", mail.outbox[1].subject)
 
     def test_spending_goal_alert_scan_sends_missed_alerts(self):
         Payment.objects.create(
@@ -199,6 +254,7 @@ class DashboardTests(TestCase):
             period_month=date(2026, 7, 1),
             amount=Decimal("1000.00"),
             alert_threshold=50,
+            alert_thresholds=[50],
         )
 
         first_count = send_spending_goal_alerts()

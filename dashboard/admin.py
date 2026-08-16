@@ -13,10 +13,16 @@ class FinancialInsightSnapshotAdmin(admin.ModelAdmin):
 
 @admin.register(MonthlySpendingGoal)
 class MonthlySpendingGoalAdmin(admin.ModelAdmin):
-    list_display = ("user", "period_month", "amount", "alert_threshold", "updated_at")
+    list_display = ("user", "period_month", "amount", "alert_thresholds_display", "updated_at")
     list_filter = ("period_month", "alert_threshold")
     search_fields = ("user__email",)
     readonly_fields = ("created_at", "updated_at")
+
+    def alert_thresholds_display(self, obj):
+        thresholds = obj.active_alert_thresholds
+        return ", ".join(f"{threshold}%" for threshold in thresholds) or "-"
+
+    alert_thresholds_display.short_description = "Avisos"
 
 
 @admin.register(SpendingGoalNotification)

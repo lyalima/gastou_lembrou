@@ -31,17 +31,17 @@
 
       <section class="payment-form-section" aria-labelledby="spending-goal-alerts">
         <h3 id="spending-goal-alerts">Avisos por email</h3>
-        <p class="form-help">Escolha se deseja receber avisos quando parte da meta for atingida.</p>
+        <p class="form-help">Escolha uma ou mais porcentagens, ou desative os avisos para esta meta.</p>
         <fieldset class="goal-threshold-group">
-          <legend class="sr-only">{{ form.alert_threshold.label }}</legend>
-          {% for radio in form.alert_threshold %}
-            <label class="goal-threshold-option" for="{{ radio.id_for_label }}">
-              {{ radio.tag }}
-              <span>{{ radio.choice_label }}</span>
+          <legend class="sr-only">{{ form.alert_thresholds.label }}</legend>
+          {% for checkbox in form.alert_thresholds %}
+            <label class="goal-threshold-option" for="{{ checkbox.id_for_label }}">
+              {{ checkbox.tag }}
+              <span>{{ checkbox.choice_label }}</span>
             </label>
           {% endfor %}
         </fieldset>
-        {{ form.alert_threshold.errors }}
+        {{ form.alert_thresholds.errors }}
       </section>
     </div>
     <footer class="payment-modal-footer">

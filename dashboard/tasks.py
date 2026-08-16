@@ -73,7 +73,7 @@ def check_spending_goal_alert(user_id, period_key):
         return False
 
     goal = MonthlySpendingGoal.objects.select_related("user").filter(user_id=user_id, period_month=month).first()
-    if not goal or not goal.alert_threshold or not goal.user.email:
+    if not goal or not goal.active_alert_thresholds or not goal.user.email:
         return False
 
     payments = filter_payments_by_report_month(accountable_payments(Payment.objects.filter(user_id=user_id)), month)
@@ -82,37 +82,38 @@ def check_spending_goal_alert(user_id, period_key):
         return False
 
     percent = (spent / goal.amount) * Decimal("100")
-    if percent < goal.alert_threshold:
-        return False
-
-    notification, created = SpendingGoalNotification.objects.get_or_create(
-        goal=goal,
-        period_key=period_key,
-        threshold=goal.alert_threshold,
-    )
-    if not created:
-        return False
-
     month_label = month.strftime("%m/%Y")
-    send_branded_email(
-        subject=f"Aviso de meta mensal de gastos: {goal.alert_threshold}% atingido - Gastou, Lembrou!",
-        title=f"{goal.alert_threshold}% da meta atingida ",
-        text_body=(
-            f"Você atingiu {goal.alert_threshold}% da sua meta de gastos de {month_label}.\n\n"
-            f"Meta definida: {_format_currency(goal.amount)}\n"
-            f"Total registrado no mês: {_format_currency(spent)}\n\n"
-            "Para mais informações acesse seu dashboard no sistema.\n\n"
-            "Obrigado por usar o Gastou, Lembrou!"
-        ),
-        to=[goal.user.email],
-    )
-    return True
+    sent_any = False
+    for threshold in goal.active_alert_thresholds:
+        if percent < threshold:
+            continue
+        notification, created = SpendingGoalNotification.objects.get_or_create(
+            goal=goal,
+            period_key=period_key,
+            threshold=threshold,
+        )
+        if not created:
+            continue
+        send_branded_email(
+            subject=f"Aviso de meta mensal de gastos: {threshold}% atingido - Gastou, Lembrou!",
+            title=f"{threshold}% da meta atingida ",
+            text_body=(
+                f"Você atingiu {threshold}% da sua meta de gastos de {month_label}.\n\n"
+                f"Meta definida: {_format_currency(goal.amount)}\n"
+                f"Total registrado no mês: {_format_currency(spent)}\n\n"
+                "Para mais informações acesse seu dashboard no sistema.\n\n"
+                "Obrigado por usar o Gastou, Lembrou!"
+            ),
+            to=[goal.user.email],
+        )
+        sent_any = True
+    return sent_any
 
 
 @shared_task
 def send_spending_goal_alerts():
     sent_count = 0
-    goals = MonthlySpendingGoal.objects.select_related("user").filter(alert_threshold__isnull=False).exclude(user__email="")
+    goals = MonthlySpendingGoal.objects.select_related("user").exclude(user__email="")
     for goal in goals:
         if check_spending_goal_alert(goal.user_id, goal.period_month.strftime("%Y-%m")):
             sent_count += 1

@@ -102,8 +102,10 @@
     </div>
     <p class="spending-goal-helper">
       {% if spending_goal %}
-        {% if spending_goal.alert_threshold %}
-          Aviso por email configurado ao atingir {{ spending_goal.alert_threshold }}% da meta.
+        {% if spending_goal_alert_thresholds %}
+          Avisos por email configurados ao atingir
+          {% for threshold in spending_goal_alert_thresholds %}{{ threshold }}%{% if not forloop.last %}, {% endif %}{% endfor %}
+          da meta.
         {% else %}
           Avisos por email desativados para esta meta.
         {% endif %}

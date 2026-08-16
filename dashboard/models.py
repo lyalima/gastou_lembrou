@@ -55,6 +55,7 @@ class MonthlySpendingGoal(models.Model):
     period_month = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     alert_threshold = models.PositiveSmallIntegerField(choices=AlertThreshold.choices, blank=True, null=True)
+    alert_thresholds = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -66,6 +67,20 @@ class MonthlySpendingGoal(models.Model):
 
     def __str__(self):
         return f"Meta mensal de {self.user} - {self.period_month:%m/%Y}"
+
+    @property
+    def active_alert_thresholds(self):
+        thresholds = self.alert_thresholds or ([self.alert_threshold] if self.alert_threshold else [])
+        valid_thresholds = {choice.value for choice in self.AlertThreshold}
+        active_thresholds = set()
+        for threshold in thresholds:
+            try:
+                threshold = int(threshold)
+            except (TypeError, ValueError):
+                continue
+            if threshold in valid_thresholds:
+                active_thresholds.add(threshold)
+        return sorted(active_thresholds)
 
 
 class SpendingGoalNotification(models.Model):

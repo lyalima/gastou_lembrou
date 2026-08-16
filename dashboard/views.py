@@ -212,6 +212,7 @@ def _spending_goal_context(user, month):
         "spending_goal_percentage": percentage,
         "spending_goal_bar_width": min(percentage, 100),
         "spending_goal_status": progress_status,
+        "spending_goal_alert_thresholds": goal.active_alert_thresholds if goal else [],
     }
 
 

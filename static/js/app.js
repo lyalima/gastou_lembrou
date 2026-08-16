@@ -471,6 +471,20 @@ function initRevealOnScroll(root = document) {
   });
 }
 
+function updateGoalThresholdChoice(input) {
+  const group = input.closest(".goal-threshold-group");
+  if (!group || input.name !== "alert_thresholds" || !input.checked) return;
+  const noAlertValue = "";
+  if (input.value === noAlertValue) {
+    group.querySelectorAll('input[name="alert_thresholds"]').forEach((option) => {
+      if (option !== input) option.checked = false;
+    });
+    return;
+  }
+  const noAlertInput = group.querySelector(`input[name="alert_thresholds"][value="${noAlertValue}"]`);
+  if (noAlertInput) noAlertInput.checked = false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   applyStoredTheme();
   initPhoneInputs();
@@ -597,5 +611,8 @@ document.body.addEventListener("change", (event) => {
   if (event.target.matches("[data-installment-total]")) {
     const field = event.target.closest("[data-installment-field]");
     if (field) updateInstallmentNumberOptions(field);
+  }
+  if (event.target.matches('input[name="alert_thresholds"]')) {
+    updateGoalThresholdChoice(event.target);
   }
 });
