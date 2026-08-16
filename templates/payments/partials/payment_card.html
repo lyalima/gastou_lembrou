@@ -14,7 +14,15 @@
       <span class="payment-bill-tag"><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Fatura</span>
     {% endif %}
     {% if payment.is_installment %}
-      <span class="payment-installment-tag"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Parcelado</span>
+      {% if payment.has_installment_info %}
+        {% if payment.is_last_installment %}
+          <span class="payment-installment-tag payment-installment-tag-finished"><i class="fa-solid fa-check" aria-hidden="true"></i> Parcelado - {{ payment.installment_number }}/{{ payment.installment_total }}</span>
+        {% else %}
+          <span class="payment-installment-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Parcelado - {{ payment.installment_number }}/{{ payment.installment_total }}</span>
+        {% endif %}
+      {% else %}
+        <span class="payment-installment-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Parcelado</span>
+      {% endif %}
     {% endif %}
   </div>
   <h2 class="payment-card-title">{{ payment.title }}</h2>

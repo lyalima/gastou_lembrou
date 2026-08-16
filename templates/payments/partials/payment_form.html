@@ -39,6 +39,19 @@
               <span>Este gasto foi parcelado</span>
             </label>
             {{ form.is_installment.errors }}
+            <div class="installment-options{% if not form.show_installment_options %} is-hidden{% endif %}" data-installment-options>
+              <div class="form-field">
+                <label class="form-label" for="{{ form.installment_total.id_for_label }}">Número de parcelas</label>
+                {{ form.installment_total }}
+                {{ form.installment_total.errors }}
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="{{ form.installment_number.id_for_label }}">Parcela atual</label>
+                {{ form.installment_number }}
+                {{ form.installment_number.errors }}
+              </div>
+            </div>
+            <small class="form-help-text">Ao salvar, o sistema cria automaticamente as parcelas anteriores e posteriores nos meses correspondentes.</small>
           </div>
           <div class="form-field payment-form-full">
             <label class="form-label" for="{{ form.kind.id_for_label }}">Tipo de lançamento</label>

@@ -12,9 +12,22 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ("title", "user", "category", "kind", "amount", "payment_method", "is_installment", "payment_date", "scheduled_date", "imported_at")
+    list_display = (
+        "title",
+        "user",
+        "category",
+        "kind",
+        "amount",
+        "payment_method",
+        "is_installment",
+        "installment_number",
+        "installment_total",
+        "payment_date",
+        "scheduled_date",
+        "imported_at",
+    )
     search_fields = ("title", "user__email", "category__name", "payment_method__name", "import_hash")
-    list_filter = ("kind", "is_installment", "category", "payment_method", "payment_date", "scheduled_date")
+    list_filter = ("kind", "is_installment", "installment_total", "category", "payment_method", "payment_date", "scheduled_date")
 
 
 @admin.register(PaymentMethod)

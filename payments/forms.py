@@ -100,6 +100,9 @@ class CreditCardStatementImportForm(forms.Form):
 
 
 class PaymentForm(forms.ModelForm):
+    INSTALLMENT_CHOICES = [(value, f"{value} parcelas") for value in range(2, 25)]
+    INSTALLMENT_NUMBER_CHOICES = [(value, f"{value}ª parcela") for value in range(1, 25)]
+
     amount = forms.CharField(
         label="Valor",
         widget=forms.TextInput(
@@ -112,10 +115,35 @@ class PaymentForm(forms.ModelForm):
             }
         ),
     )
+    installment_total = forms.ChoiceField(
+        label="Número de parcelas",
+        choices=INSTALLMENT_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "form-input", "data-installment-total": "true"}),
+    )
+    installment_number = forms.ChoiceField(
+        label="Parcela atual",
+        choices=INSTALLMENT_NUMBER_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={"class": "form-input", "data-installment-number": "true"}),
+    )
 
     class Meta:
         model = Payment
-        fields = ("title", "category", "kind", "description", "amount", "payment_method", "is_installment", "payment_date", "scheduled_date", "image")
+        fields = (
+            "title",
+            "category",
+            "kind",
+            "description",
+            "amount",
+            "payment_method",
+            "is_installment",
+            "installment_total",
+            "installment_number",
+            "payment_date",
+            "scheduled_date",
+            "image",
+        )
         widgets = {
             "title": forms.TextInput(attrs={"class": "form-input"}),
             "category": forms.Select(attrs={"class": "form-input"}),
@@ -139,6 +167,11 @@ class PaymentForm(forms.ModelForm):
         self.fields["payment_method"].queryset = PaymentMethod.objects.all()
         self.fields["payment_method"].empty_label = "Selecione uma forma de pagamento"
         self.show_installment_field = self._initial_payment_method_is_credit_card()
+        self.show_installment_options = self._initial_is_installment()
+        if self.instance.pk and self.instance.installment_total:
+            self.fields["installment_total"].initial = self.instance.installment_total
+        if self.instance.pk and self.instance.installment_number:
+            self.fields["installment_number"].initial = self.instance.installment_number
 
     def clean_kind(self):
         return self.cleaned_data.get("kind") or Payment.Kind.EXPENSE
@@ -148,6 +181,29 @@ class PaymentForm(forms.ModelForm):
         payment_method = cleaned_data.get("payment_method")
         if not self._is_credit_card_method(payment_method):
             cleaned_data["is_installment"] = False
+            cleaned_data["installment_total"] = None
+            cleaned_data["installment_number"] = None
+            return cleaned_data
+
+        if not cleaned_data.get("is_installment"):
+            cleaned_data["installment_total"] = None
+            cleaned_data["installment_number"] = None
+            return cleaned_data
+
+        installment_total = self._parse_installment_choice(cleaned_data.get("installment_total"))
+        installment_number = self._parse_installment_choice(cleaned_data.get("installment_number"))
+
+        if not installment_total:
+            self.add_error("installment_total", "Selecione o número de parcelas.")
+        if not installment_number:
+            self.add_error("installment_number", "Selecione qual parcela está sendo cadastrada.")
+        if installment_total and installment_number and installment_number > installment_total:
+            self.add_error("installment_number", "A parcela atual não pode ser maior que o total de parcelas.")
+        if not cleaned_data.get("payment_date"):
+            self.add_error("payment_date", "Informe a data do pagamento para gerar as parcelas.")
+
+        cleaned_data["installment_total"] = installment_total
+        cleaned_data["installment_number"] = installment_number
         return cleaned_data
 
     def clean_amount(self):
@@ -198,3 +254,18 @@ class PaymentForm(forms.ModelForm):
         if self.is_bound and self.data.get(field_name):
             return self._is_credit_card_method(self.fields["payment_method"].queryset.filter(pk=self.data.get(field_name)).first())
         return self._is_credit_card_method(self.initial.get("payment_method") or self.instance.payment_method)
+
+    def _initial_is_installment(self):
+        field_name = self.add_prefix("is_installment")
+        if self.is_bound:
+            return field_name in self.data
+        return bool(self.initial.get("is_installment") or self.instance.is_installment)
+
+    @staticmethod
+    def _parse_installment_choice(value):
+        if value in (None, ""):
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None

@@ -1,4 +1,5 @@
 import mimetypes
+import uuid
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -7,6 +8,7 @@ from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, UpdateView
 
@@ -18,6 +20,7 @@ from .credit_card_statement_import import (
     process_credit_card_statement,
 )
 from .forms import BankStatementImportForm, CategoryForm, CreditCardStatementImportForm, PaymentForm
+from .installments import create_installment_siblings
 from .models import Category, CreditCardStatement, CreditCardStatementItem, Payment, PaymentMethod
 from .cache import get_cached_payment_ids
 from .statement_import import import_statement_payments
@@ -36,7 +39,24 @@ class PaymentListView(UserScopedMixin, ListView):
     paginate_by = 6
 
     def get_queryset(self):
-        queryset = super().get_queryset().select_related("category", "payment_method")
+        queryset = self.apply_filters(super().get_queryset().select_related("category", "payment_method"))
+        queryset = queryset.exclude(self.future_installment_filter())
+        queryset = self.apply_ordering(queryset)
+        payment_ids = get_cached_payment_ids(
+            self.request.user.pk,
+            self.request.GET,
+            lambda: queryset.values_list("pk", flat=True),
+            scope="current",
+        )
+        if not payment_ids:
+            return Payment.objects.none()
+        preserved_order = Case(
+            *[When(pk=payment_id, then=Value(index)) for index, payment_id in enumerate(payment_ids)],
+            output_field=IntegerField(),
+        )
+        return Payment.objects.filter(pk__in=payment_ids).select_related("category", "payment_method").order_by(preserved_order)
+
+    def apply_filters(self, queryset):
         query = self.request.GET.get("q")
         category = self.request.GET.get("category")
         payment_method = self.request.GET.get("payment_method")
@@ -62,24 +82,22 @@ class PaymentListView(UserScopedMixin, ListView):
             queryset = queryset.filter(scheduled_date__isnull=False)
         elif schedule_status == "unscheduled":
             queryset = queryset.filter(scheduled_date__isnull=True)
-        queryset = queryset.order_by("payment_date", "created_at") if order == "asc" else queryset.order_by("-payment_date", "-created_at")
-        payment_ids = get_cached_payment_ids(
-            self.request.user.pk,
-            self.request.GET,
-            lambda: queryset.values_list("pk", flat=True),
-        )
-        if not payment_ids:
-            return Payment.objects.none()
-        preserved_order = Case(
-            *[When(pk=payment_id, then=Value(index)) for index, payment_id in enumerate(payment_ids)],
-            output_field=IntegerField(),
-        )
-        return Payment.objects.filter(pk__in=payment_ids).select_related("category", "payment_method").order_by(preserved_order)
+        return queryset
+
+    def apply_ordering(self, queryset):
+        order = self.request.GET.get("order", "desc")
+        return queryset.order_by("payment_date", "created_at") if order == "asc" else queryset.order_by("-payment_date", "-created_at")
+
+    def future_installment_filter(self):
+        return Q(is_installment=True, payment_date__gt=timezone.localdate())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         filter_querystring = self.request.GET.copy()
         filter_querystring.pop("page", None)
+        future_installments = self.apply_filters(
+            Payment.objects.filter(user=self.request.user).select_related("category", "payment_method")
+        ).filter(self.future_installment_filter())
         context["categories"] = self.get_category_queryset()
         context["payment_methods"] = PaymentMethod.objects.all()
         context["payment_form"] = PaymentForm(user=self.request.user)
@@ -87,6 +105,7 @@ class PaymentListView(UserScopedMixin, ListView):
         context["import_form"] = BankStatementImportForm()
         context["credit_card_statement_form"] = CreditCardStatementImportForm()
         context["filter_querystring"] = filter_querystring.urlencode()
+        context["future_installments"] = future_installments.order_by("payment_date", "created_at")
         return context
 
     def get_category_queryset(self):
@@ -119,12 +138,23 @@ class PaymentCreateView(LoginRequiredMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
-        response = super().form_valid(form)
-        if form.instance.scheduled_date:
-            queue_payment_confirmation(form.instance.pk)
-        messages.success(self.request, "Pagamento salvo.")
+        with transaction.atomic():
+            form.instance.user = self.request.user
+            if form.instance.is_installment:
+                form.instance.installment_group = uuid.uuid4()
+            self.object = form.save()
+            sibling_payments = create_installment_siblings(self.object)
+        if self.object.scheduled_date:
+            queue_payment_confirmation(self.object.pk)
+        messages.success(self.request, self._success_message(sibling_payments))
+        response = redirect(self.get_success_url())
         return _htmx_refresh_or_response(self.request, response)
+
+    @staticmethod
+    def _success_message(sibling_payments):
+        if sibling_payments:
+            return f"Pagamento salvo e {len(sibling_payments)} parcela(s) criada(s)."
+        return "Pagamento salvo."
 
 
 class PaymentUpdateView(UserScopedMixin, UpdateView):

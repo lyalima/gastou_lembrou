@@ -86,6 +86,9 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="payments", blank=True, null=True)
     is_installment = models.BooleanField(default=False)
+    installment_group = models.UUIDField(blank=True, null=True, db_index=True)
+    installment_number = models.PositiveSmallIntegerField(blank=True, null=True)
+    installment_total = models.PositiveSmallIntegerField(blank=True, null=True)
     payment_date = models.DateField(blank=True, null=True)
     scheduled_date = models.DateField(blank=True, null=True)
     image = models.FileField(upload_to="payments/receipts/", blank=True, null=True)
@@ -136,6 +139,14 @@ class Payment(models.Model):
     @property
     def is_schedule_finished(self):
         return bool(self.scheduled_date and self.scheduled_date < timezone.localdate())
+
+    @property
+    def has_installment_info(self):
+        return bool(self.is_installment and self.installment_number and self.installment_total)
+
+    @property
+    def is_last_installment(self):
+        return bool(self.has_installment_info and self.installment_number == self.installment_total)
 
 
 class CreditCardStatementItem(models.Model):

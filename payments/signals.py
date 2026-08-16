@@ -26,6 +26,10 @@ def clear_installment_for_non_credit_card(sender, instance, **kwargs):
     method_name = getattr(instance.payment_method, "name", "")
     if normalize_text(method_name) not in {"cartao de credito", "cartao credito", "credito"}:
         instance.is_installment = False
+    if not instance.is_installment:
+        instance.installment_group = None
+        instance.installment_number = None
+        instance.installment_total = None
 
 
 @receiver(post_save, sender=Payment)

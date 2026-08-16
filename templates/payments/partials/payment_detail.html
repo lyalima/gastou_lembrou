@@ -12,9 +12,25 @@
     <div class="payment-detail-summary">
       <div>
         <span class="payment-category-tag">{% if object.category %}{{ object.category.name }}{% else %}<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Categorização automática pendente{% endif %}</span>
-        {% if object.scheduled_date %}<span class="payment-scheduled-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Agendado</span>{% endif %}
+        {% if object.scheduled_date %}
+          {% if object.is_schedule_finished %}
+            <span class="payment-schedule-finished-tag"><i class="fa-solid fa-check" aria-hidden="true"></i> Agendado - Finalizado</span>
+          {% else %}
+            <span class="payment-scheduled-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Agendado</span>
+          {% endif %}
+        {% endif %}
         {% if object.is_credit_card_bill %}<span class="payment-bill-tag"><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Fatura</span>{% endif %}
-        {% if object.is_installment %}<span class="payment-installment-tag"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Parcelado</span>{% endif %}
+        {% if object.is_installment %}
+          {% if object.has_installment_info %}
+            {% if object.is_last_installment %}
+              <span class="payment-installment-tag payment-installment-tag-finished"><i class="fa-solid fa-check" aria-hidden="true"></i> Parcelado - {{ object.installment_number }}/{{ object.installment_total }}</span>
+            {% else %}
+              <span class="payment-installment-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Parcelado - {{ object.installment_number }}/{{ object.installment_total }}</span>
+            {% endif %}
+          {% else %}
+            <span class="payment-installment-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Parcelado</span>
+          {% endif %}
+        {% endif %}
       </div>
       <strong>R$ {{ object.amount|floatformat:2 }}</strong>
     </div>

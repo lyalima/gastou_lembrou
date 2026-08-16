@@ -185,5 +185,22 @@
       {% endif %}
     </nav>
   {% endif %}
+
+  {% if future_installments %}
+    <section class="payment-future-section" aria-labelledby="future-installments-title">
+      <div class="payment-section-heading">
+        <div>
+          <p class="payments-eyebrow">Compras parceladas</p>
+          <h2 id="future-installments-title">Lançamentos futuros</h2>
+        </div>
+        <span>{{ future_installments|length }} parcela{{ future_installments|length|pluralize }} futura{{ future_installments|length|pluralize }}</span>
+      </div>
+      <div class="payment-grid payment-future-grid" aria-label="Parcelas futuras de compras parceladas">
+        {% for payment in future_installments %}
+          {% include "payments/partials/payment_card.html" %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 </div>
 {% endblock %}

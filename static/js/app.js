@@ -400,10 +400,39 @@ function updateInstallmentField(select) {
     const checkbox = field.querySelector("input[type='checkbox']");
     if (checkbox) checkbox.checked = false;
   }
+  updateInstallmentOptions(field);
 }
 
 function initInstallmentFields(root = document) {
   root.querySelectorAll("[data-payment-method-select]").forEach(updateInstallmentField);
+  root.querySelectorAll("[data-installment-field]").forEach(updateInstallmentOptions);
+}
+
+function updateInstallmentOptions(field) {
+  const checkbox = field.querySelector("input[type='checkbox']");
+  const options = field.querySelector("[data-installment-options]");
+  if (!checkbox || !options) return;
+  const shouldShow = !field.classList.contains("is-hidden") && checkbox.checked;
+  options.classList.toggle("is-hidden", !shouldShow);
+  options.querySelectorAll("select").forEach((select) => {
+    select.toggleAttribute("disabled", !shouldShow);
+  });
+  if (shouldShow) updateInstallmentNumberOptions(field);
+}
+
+function updateInstallmentNumberOptions(field) {
+  const totalSelect = field.querySelector("[data-installment-total]");
+  const numberSelect = field.querySelector("[data-installment-number]");
+  if (!totalSelect || !numberSelect) return;
+  const total = Number(totalSelect.value || 0);
+  numberSelect.querySelectorAll("option").forEach((option) => {
+    const value = Number(option.value || 0);
+    option.hidden = Boolean(total && value > total);
+    option.disabled = Boolean(total && value > total);
+  });
+  if (total && Number(numberSelect.value || 0) > total) {
+    numberSelect.value = String(total);
+  }
 }
 
 function registerPwaServiceWorker() {
@@ -560,5 +589,13 @@ document.body.addEventListener("input", (event) => {
 document.body.addEventListener("change", (event) => {
   if (event.target.matches("[data-payment-method-select]")) {
     updateInstallmentField(event.target);
+  }
+  if (event.target.matches("[data-installment-checkbox]")) {
+    const field = event.target.closest("[data-installment-field]");
+    if (field) updateInstallmentOptions(field);
+  }
+  if (event.target.matches("[data-installment-total]")) {
+    const field = event.target.closest("[data-installment-field]");
+    if (field) updateInstallmentNumberOptions(field);
   }
 });

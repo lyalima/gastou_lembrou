@@ -148,6 +148,8 @@ class StatementImportTests(TestCase):
                 "amount": "300.00",
                 "payment_method": card_method.pk,
                 "is_installment": "on",
+                "installment_total": "3",
+                "installment_number": "1",
                 "payment_date": "2026-07-10",
             },
         )
@@ -158,6 +160,8 @@ class StatementImportTests(TestCase):
         payment.save()
 
         self.assertTrue(payment.is_installment)
+        self.assertEqual(payment.installment_total, 3)
+        self.assertEqual(payment.installment_number, 1)
 
     def test_non_credit_card_payment_clears_installment_flag(self):
         pix_method = PaymentMethod.objects.create(name="Pix")
