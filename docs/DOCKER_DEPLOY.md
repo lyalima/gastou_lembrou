@@ -51,6 +51,9 @@ SECURE_SSL_REDIRECT=False
 SESSION_COOKIE_SECURE=False
 CSRF_COOKIE_SECURE=False
 SECURE_HSTS_SECONDS=0
+POSTGRES_DB=gastou_lembrou
+POSTGRES_USER=gastou_lembrou
+POSTGRES_PASSWORD=troque-esta-senha
 ```
 
 Para producao real com HTTPS, use valores seguros:
@@ -99,6 +102,8 @@ Configure tambem:
 - Redis e `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `CACHE_URL`.
 - SMTP real.
 - Google OAuth com URLs finais do dominio.
+- Credenciais fortes para `POSTGRES_USER` e `POSTGRES_PASSWORD` se o banco rodar
+  no proprio Docker Compose.
 
 ## Arquivos Privados
 

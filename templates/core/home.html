@@ -4,52 +4,141 @@
 {% block public_content %}
 <main class="public-shell home-page" id="main-content">
   <section class="home-hero">
-    <img class="home-hero-image" src="{% static 'img/home-finance-hero.png' %}" width="1693" height="929" alt="Aplicativo financeiro com gastos, comprovantes e calendário de lembretes" fetchpriority="high">
     <header class="public-topbar home-topbar">
       <div class="public-topbar-inner">
-        <a href="{% url 'core:home' %}" class="public-brand">
+        <a href="{% url 'core:home' %}" class="public-brand" translate="no">
           <img src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="">
           <span>Gastou, Lembrou!</span>
         </a>
         <nav class="public-actions" aria-label="Acesso à conta">
-          <a class="btn-primary" href="{% url 'account_signup' %}">Começar agora</a>
-          <a class="public-secondary-button" href="{% url 'account_login' %}">Já tenho conta</a>
+          <a class="btn-primary" href="{% url 'account_signup' %}">Começar Agora</a>
+          <a class="public-secondary-button" href="{% url 'account_login' %}">Já Tenho Conta</a>
         </nav>
       </div>
     </header>
-    <div class="home-hero-content">
-      <p class="home-eyebrow">Finanças pessoais organizadas</p>
-      <h1>Suas contas e gastos em um só lugar</h1>
-      <p>Organize seus gastos, separe por categoria, envie notas fiscais e receba lembretes para não esquecer uma conta importante.</p>
-      <div class="home-hero-actions">
-        <a class="btn-primary btn-large" href="{% url 'account_signup' %}">Começar agora</a>
-        <a class="public-secondary-button btn-large" href="{% url 'account_login' %}">Já tenho conta</a>
+
+    <div class="home-hero-inner">
+      <div class="home-hero-content" data-reveal>
+        <p class="home-eyebrow">Controle financeiro com lembretes inteligentes</p>
+        <h1>Gastou, Lembrou!</h1>
+        <p>Organize gastos, comprovantes e vencimentos sem perder o ritmo. Cadastre pagamentos, importe extratos, acompanhe metas mensais e receba avisos antes das contas vencerem.</p>
+        <div class="home-hero-actions">
+          <a class="btn-primary btn-large" href="{% url 'account_signup' %}">
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            <span>Começar Agora</span>
+          </a>
+          <a class="public-secondary-button btn-large" href="{% url 'account_login' %}">Já Tenho Conta</a>
+        </div>
+        <dl class="home-hero-metrics" aria-label="Destaques do sistema">
+          <div>
+            <dt>PDF</dt>
+            <dd>Relatórios mensais</dd>
+          </div>
+          <div>
+            <dt>IA</dt>
+            <dd>Insights financeiros</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>Lembretes automáticos</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="home-product-showcase" data-reveal>
+        <img class="home-hero-image" src="{% static 'img/home-finance-hero.png' %}" width="1693" height="929" alt="Painel financeiro com gastos, comprovantes e calendário de lembretes" fetchpriority="high">
+        <div class="home-floating-card home-floating-card-total" aria-hidden="true">
+          <span>Total do mês</span>
+          <strong>R$ 2.845,90</strong>
+          <small>72% da meta mensal</small>
+        </div>
+        <div class="home-floating-card home-floating-card-alert" aria-hidden="true">
+          <i class="fa-regular fa-bell"></i>
+          <span>Conta vence amanhã</span>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="home-features" aria-labelledby="features-title">
-    <div class="home-section-heading">
-      <p>Organização no dia a dia</p>
-      <h2 id="features-title">Tudo o que importa, sem complicação</h2>
+    <div class="home-section-heading" data-reveal>
+      <p>Organização no Dia a Dia</p>
+      <h2 id="features-title">Recursos para transformar pagamentos soltos em uma rotina clara.</h2>
     </div>
     <div class="home-feature-grid">
-      <article class="home-feature-card">
+      <article class="home-feature-card" data-reveal>
         <span class="home-feature-icon"><i class="fa-solid fa-dollar-sign" aria-hidden="true"></i></span>
-        <h3>Cadastre suas contas</h3>
-        <p>Registre cada conta ou gasto e mantenha as informações financeiras reunidas.</p>
+        <h3>Pagamentos e Gastos</h3>
+        <p>Registre despesas com data, valor, categoria, forma de pagamento e agendamento.</p>
       </article>
-      <article class="home-feature-card">
+      <article class="home-feature-card" data-reveal>
         <span class="home-feature-icon home-feature-icon-blue"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span>
-        <h3>Organize comprovantes</h3>
-        <p>Envie imagens ou PDFs de notas fiscais e comprovantes vinculados aos pagamentos.</p>
+        <h3>Notas e Comprovantes</h3>
+        <p>Vincule imagens ou PDFs aos pagamentos para manter o histórico completo.</p>
       </article>
-      <article class="home-feature-card">
+      <article class="home-feature-card" data-reveal>
         <span class="home-feature-icon home-feature-icon-amber"><i class="fa-regular fa-bell" aria-hidden="true"></i></span>
-        <h3>Receba lembretes</h3>
-        <p>Agende pagamentos e receba avisos por email nas datas configuradas.</p>
+        <h3>Lembretes por Email</h3>
+        <p>Receba avisos de pagamentos agendados e reduza o risco de esquecer vencimentos.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-rose"><i class="fa-solid fa-bullseye" aria-hidden="true"></i></span>
+        <h3>Metas Mensais</h3>
+        <p>Defina um limite de gastos e acompanhe o progresso com alertas configuráveis.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-indigo"><i class="fa-solid fa-file-import" aria-hidden="true"></i></span>
+        <h3>Importação de Extratos</h3>
+        <p>Importe arquivos bancários e transforme lançamentos em pagamentos revisáveis.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-cyan"><i class="fa-regular fa-credit-card" aria-hidden="true"></i></span>
+        <h3>Faturas de Cartão</h3>
+        <p>Envie PDFs de fatura, revise lançamentos detectados e confirme a importação.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-violet"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>
+        <h3>Insights com IA</h3>
+        <p>Gere análises mensais para entender variações, padrões e pontos de atenção.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-slate"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i></span>
+        <h3>Relatórios PDF</h3>
+        <p>Baixe relatórios mensais com totais, categorias, formas de pagamento e evolução.</p>
       </article>
     </div>
+  </section>
+
+  <section class="home-flow" aria-labelledby="flow-title">
+    <div class="home-section-heading" data-reveal>
+      <p>Do Registro ao Lembrete</p>
+      <h2 id="flow-title">Um fluxo simples para manter suas contas sob controle.</h2>
+    </div>
+    <div class="home-flow-grid">
+      <article class="home-flow-step" data-reveal>
+        <span>01</span>
+        <h3>Cadastre ou importe</h3>
+        <p>Adicione pagamentos manualmente, importe extratos ou envie faturas de cartão.</p>
+      </article>
+      <article class="home-flow-step" data-reveal>
+        <span>02</span>
+        <h3>Acompanhe o mês</h3>
+        <p>Veja categorias, formas de pagamento, metas e evolução em um painel mensal.</p>
+      </article>
+      <article class="home-flow-step" data-reveal>
+        <span>03</span>
+        <h3>Receba avisos</h3>
+        <p>Use lembretes e relatórios para revisar gastos antes que eles virem surpresa.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="home-final-cta" aria-labelledby="home-cta-title" data-reveal>
+    <div>
+      <p>Pronto para organizar seus gastos?</p>
+      <h2 id="home-cta-title">Comece com seus pagamentos atuais e evolua para metas, relatórios e insights.</h2>
+    </div>
+    <a class="btn-primary btn-large" href="{% url 'account_signup' %}">Criar Minha Conta</a>
   </section>
 
   <footer class="public-footer">

@@ -26,14 +26,14 @@ def previous_month(reference_date=None):
 def queue_financial_insights(snapshot_id):
     try:
         generate_financial_insights.delay(snapshot_id)
-    except OperationalError:
+    except (OperationalError, OSError):
         generate_financial_insights(snapshot_id)
 
 
 def queue_spending_goal_alert_check(user_id, month):
     try:
         check_spending_goal_alert.delay(user_id, month.strftime("%Y-%m"))
-    except OperationalError:
+    except (OperationalError, OSError):
         check_spending_goal_alert(user_id, month.strftime("%Y-%m"))
 
 

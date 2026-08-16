@@ -1,6 +1,8 @@
 let modalTrigger = null;
 let dashboardCharts = [];
 
+document.documentElement.classList.add("has-reveal-observer");
+
 function openModal() {
   const modal = document.getElementById("modal");
   if (modal && modal.innerHTML.trim()) {
@@ -413,6 +415,33 @@ function registerPwaServiceWorker() {
   });
 }
 
+function initRevealOnScroll(root = document) {
+  const elements = [...root.querySelectorAll("[data-reveal]")].filter((element) => !element.dataset.revealReady);
+  if (!elements.length) return;
+
+  if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    elements.forEach((element) => {
+      element.dataset.revealReady = "true";
+      element.classList.add("is-visible");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      observer.unobserve(entry.target);
+    });
+  }, { rootMargin: "0px 0px -10% 0px", threshold: 0.14 });
+
+  elements.forEach((element, index) => {
+    element.dataset.revealReady = "true";
+    element.style.transitionDelay = `${Math.min(index * 45, 220)}ms`;
+    observer.observe(element);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   applyStoredTheme();
   initPhoneInputs();
@@ -420,6 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initClearableFilters();
   initCurrencyCentInputs();
   initInstallmentFields();
+  initRevealOnScroll();
   registerPwaServiceWorker();
 });
 

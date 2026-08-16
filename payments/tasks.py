@@ -16,14 +16,14 @@ def format_email_date(value):
 def queue_payment_confirmation(payment_id):
     try:
         send_payment_confirmation.delay(str(payment_id))
-    except OperationalError:
+    except (OperationalError, OSError):
         send_payment_confirmation(str(payment_id))
 
 
 def queue_payment_categorization(payment_id):
     try:
         categorize_payment.delay(str(payment_id))
-    except OperationalError:
+    except (OperationalError, OSError):
         return None
 
 

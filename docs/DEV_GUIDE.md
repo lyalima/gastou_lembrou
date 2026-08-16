@@ -29,8 +29,8 @@ Principais arquivos:
 
 - `accounts/models.py`: define `User`, sem `username`, com login por email.
 - `accounts/managers.py`: criação de usuário/superusuário.
-- `accounts/forms.py`: formulários de admin/perfil.
-- `accounts/views.py`: perfil e troca de senha.
+- `accounts/forms.py`: formulários de admin, perfil, cadastro, aceite legal e redefinição de senha.
+- `accounts/views.py`: perfil, troca de senha, aceite legal obrigatório e exclusão de conta.
 - `accounts/adapters.py`: customização do Allauth para emails HTML, envio em background e ocultar mensagens de login/logout.
 - `accounts/social_adapters.py`: customização do login social Google.
 - `accounts/signals.py`: sincroniza `email_verified` e email primário após confirmação.
@@ -40,6 +40,8 @@ Regras importantes:
 - O login padrão é por email/senha.
 - `username` não existe no model.
 - A confirmação de email é obrigatória para cadastro por email.
+- A redefinição de senha usa o fluxo do Allauth apenas para contas criadas manualmente com email/senha.
+- Contas criadas somente via Google não recebem email de redefinição; devem usar o login social.
 - Ao alterar email no perfil:
   - o email antigo é removido de `EmailAddress`;
   - o novo email vira primário, não verificado;
@@ -61,10 +63,12 @@ Responsável por categorias, formas de pagamento, pagamentos, uploads de nota fi
 Principais models:
 
 - `Category`
+  - FK opcional para usuário
   - `name`
   - `description`
   - timestamps
-  - não pertence a usuário; categorias são globais e administradas pelo admin/staff.
+  - categorias com `user=null` são globais;
+  - categorias com `user` preenchido são personalizadas e visíveis somente para esse usuário.
 - `PaymentMethod`
   - `name`
   - timestamps
@@ -91,8 +95,9 @@ CRUD:
 - Listagem em `/pagamentos/`.
 - Modais HTMX para criar, editar, visualizar e excluir.
 - Pagamentos sempre são filtrados pelo usuário autenticado.
-- Categorias só podem ser criadas por staff/superuser.
-- Usuários comuns não veem o botão de nova categoria.
+- Categorias globais podem ser criadas pelo admin/staff.
+- Usuários comuns podem criar categorias personalizadas pela página de pagamentos.
+- Categorias personalizadas sempre recebem `Category.user = request.user`.
 
 Filtros da listagem:
 
@@ -308,10 +313,13 @@ GOOGLE_CLIENT_SECRET=...
 Celery é usado para:
 
 - emails de confirmação do Allauth;
+- emails de redefinição de senha do Allauth;
 - emails de suporte;
 - confirmação de pagamento agendado;
 - lembretes de pagamento;
 - envio mensal de relatório PDF.
+- alertas de meta mensal;
+- notificações de atualização de termos.
 
 Comandos locais:
 
@@ -326,8 +334,12 @@ Agendamentos atuais:
 
 - `payments.tasks.send_payment_reminders`
   - verifica lembretes de pagamentos agendados.
+- `dashboard.tasks.send_spending_goal_alerts`
+  - verifica metas mensais que atingiram o percentual configurado pelo usuário.
 - `dashboard.tasks.send_previous_month_reports`
   - todo dia 1, 08:00, envia relatório do mês anterior.
+- `accounts.tasks.send_pending_legal_update_notifications`
+  - envia notificações pendentes de atualização de Termos/Privacidade.
 
 Para testar manualmente o envio do relatório mensal:
 
@@ -352,11 +364,14 @@ Tipos principais:
 
 - Confirmação de email/cadastro.
 - Email após alteração de email no perfil.
+- Redefinição de senha para contas manuais.
 - Confirmação imediata de pagamento agendado.
 - Lembrete 1 dia antes.
 - Lembrete no dia do vencimento.
 - Suporte.
 - Relatório mensal PDF.
+- Alerta de meta mensal.
+- Atualização de Termos de Uso e Política de Privacidade.
 
 Templates:
 
@@ -365,6 +380,7 @@ Templates:
 - Allauth:
   - `templates/account/email/email_confirmation_message.html`
   - `templates/account/email/email_confirmation_signup_message.html`
+  - `templates/account/email/password_reset_key_message.html`
   - `.txt` correspondentes como fallback.
 
 Configurações úteis:
@@ -389,6 +405,7 @@ O projeto não usa SPA. O frontend é Django templates com:
 - Chart.js para gráficos do dashboard.
 - Font Awesome para ícones.
 - `intl-tel-input` para telefone internacional no perfil.
+- PWA básico com manifest, service worker e página offline.
 
 Tema:
 
@@ -405,6 +422,7 @@ Públicas:
 - `/accounts/signup/`
 - `/accounts/google/login/`
 - `/accounts/logout/`
+- `/accounts/password/reset/`
 
 Autenticadas:
 
@@ -423,9 +441,14 @@ Admin:
 
 Pagamentos sempre devem ser filtrados por `request.user`.
 
-Categorias e formas de pagamento são globais:
+Categorias podem ser globais ou personalizadas:
 
 - `Category`
+  - global quando `user is null`;
+  - personalizada quando `user=request.user`.
+
+Formas de pagamento são globais:
+
 - `PaymentMethod`
 
 Pagamentos são privados por usuário:

@@ -108,7 +108,7 @@ def queue_email_message(message):
     payload = serialize_email_message(message)
     try:
         send_serialized_email_message_task.delay(payload)
-    except (EncodeError, OperationalError):
+    except (EncodeError, OperationalError, OSError):
         send_serialized_email_message(payload)
 
 
@@ -127,7 +127,7 @@ def queue_branded_email(subject, text_body, to, *, from_email=None, title=None, 
             attachments=serialized_attachments,
             reply_to=reply_to,
         )
-    except (EncodeError, OperationalError):
+    except (EncodeError, OperationalError, OSError):
         send_branded_email(
             subject,
             text_body,

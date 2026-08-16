@@ -1,5 +1,5 @@
 {% load static %}
-const CACHE_VERSION = "gastou-lembrou-pwa-v1";
+const CACHE_VERSION = "gastou-lembrou-pwa-v2";
 const OFFLINE_URL = "{% url 'core:offline' %}";
 const STATIC_ASSETS = [
   OFFLINE_URL,
@@ -32,7 +32,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (url.pathname.startsWith("/static/")) {
-    event.respondWith(cacheFirst(request));
+    event.respondWith(networkFirstStatic(request));
     return;
   }
 
@@ -41,16 +41,17 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-
-  const response = await fetch(request);
-  if (response.ok) {
-    const cache = await caches.open(CACHE_VERSION);
-    cache.put(request, response.clone());
+async function networkFirstStatic(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_VERSION);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return caches.match(request);
   }
-  return response;
 }
 
 async function networkFirstNavigation(request) {

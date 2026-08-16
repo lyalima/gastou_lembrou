@@ -11,7 +11,7 @@ from .models import LegalUpdateNotification
 def queue_legal_update_notification(user_id):
     try:
         send_legal_update_notification.delay(str(user_id))
-    except OperationalError:
+    except (OperationalError, OSError):
         send_legal_update_notification(str(user_id))
 
 

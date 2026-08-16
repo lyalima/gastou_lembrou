@@ -176,8 +176,8 @@ MAX_CREDIT_CARD_STATEMENT_UPLOAD_MB = config("MAX_CREDIT_CARD_STATEMENT_UPLOAD_M
 MAX_SUPPORT_SCREENSHOT_MB = config("MAX_SUPPORT_SCREENSHOT_MB", default=5, cast=int)
 
 EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Gastou Lembrou <principal@gastoulembrou.com.br>")
-SUPPORT_EMAIL = config("SUPPORT_EMAIL", default="suporte@gastoulembrou.com.br")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Gastou Lembrou <principal@seudominio.com.br>")
+SUPPORT_EMAIL = config("SUPPORT_EMAIL", default="suporte@seudominio.com.br")
 EMAIL_HOST = config("EMAIL_HOST", default="")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
