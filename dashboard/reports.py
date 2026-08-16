@@ -112,12 +112,17 @@ class DashboardPdfBuilder:
         if not payments:
             self.empty_state("Nenhum pagamento registrado.")
             return
-        self.table_header(("Pagamento", "Data", "Agend.", "Valor"))
+        self.table_header(("Pagamento", "Data", "Valor"))
         for payment in payments:
-            payment_date = payment.payment_date.strftime("%d/%m/%Y") if payment.payment_date else "-"
-            scheduled_date = payment.scheduled_date.strftime("%d/%m/%Y") if payment.scheduled_date else "-"
+            display_date = payment.payment_date or payment.scheduled_date
+            date_label = display_date.strftime("%d/%m/%Y") if display_date else "-"
+            if payment.scheduled_date:
+                date_label = f"{date_label} - Agendado"
             title = f"{payment.title} ({payment.category.name})" if payment.category_id else payment.title
-            self.table_row((title, payment_date, scheduled_date, format_currency(payment.amount)), height=row_height)
+            amount_label = format_currency(payment.amount)
+            if payment.has_installment_info:
+                amount_label = f"{amount_label} - {payment.installment_number}/{payment.installment_total}"
+            self.table_row((title, date_label, amount_label), height=row_height)
 
     def section_title(self, title):
         self.text(title, MARGIN, self.y, size=14, color=TEXT, bold=True)

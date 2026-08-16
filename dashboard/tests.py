@@ -536,6 +536,18 @@ class DashboardTests(TestCase):
             scheduled_date=date(2026, 5, 20),
         )
         Payment.objects.filter(pk=scheduled.pk).update(payment_date=None)
+        credit_card = PaymentMethod.objects.create(name="Cartão de crédito")
+        Payment.objects.create(
+            user=self.user,
+            category=self.category,
+            payment_method=credit_card,
+            title="Compra parcelada",
+            amount=Decimal("100.00"),
+            payment_date=date(2026, 5, 15),
+            is_installment=True,
+            installment_number=1,
+            installment_total=3,
+        )
         Payment.objects.create(
             user=self.user,
             category=self.category,
@@ -578,6 +590,10 @@ class DashboardTests(TestCase):
         self.assertIn("R$ 30,00", text)
         self.assertIn("Conta agendada", text)
         self.assertIn("R$ 80,00", text)
+        self.assertIn("Compra parcelada", text)
+        self.assertIn("R$ 100,00 - 1/3", text)
+        self.assertIn("20/05/2026 - Agendado", text)
+        self.assertNotIn("Agend.", text)
         self.assertNotIn("Junho nao deve aparecer", text)
         self.assertNotIn("Nao deve aparecer", text)
 
