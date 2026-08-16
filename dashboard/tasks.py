@@ -101,7 +101,7 @@ def check_spending_goal_alert(user_id, period_key):
             f"Você atingiu {goal.alert_threshold}% da sua meta de gastos de {month_label}.\n\n"
             f"Meta definida: {_format_currency(goal.amount)}\n"
             f"Total registrado no mês: {_format_currency(spent)}\n\n"
-            "Para mais informações acesse seu dashboard no sistema."
+            "Para mais informações acesse seu dashboard no sistema.\n\n"
             "Obrigado por usar o Gastou, Lembrou!"
         ),
         to=[goal.user.email],
