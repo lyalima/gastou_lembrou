@@ -476,5 +476,5 @@ Para produção real:
 ## 📚 Documentação complementar
 
 - [Guia Docker/deploy](docs/DOCKER_DEPLOY.md)
-- [Guia para desenvolvedores](docs/DEVELOPER_GUIDE.md)
+- [Guia para desenvolvedores](docs/DEV_GUIDE.md)
 - [Auditoria de segurança](docs/SECURITY_REVIEW.md)
