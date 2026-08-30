@@ -9,7 +9,11 @@
         <img src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="">
         <span>Gastou, Lembrou!</span>
       </a>
-      <a class="public-secondary-button" href="{% url 'account_signup' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar </a>
+      {% if user.is_authenticated %}
+        <a class="public-secondary-button" href="{% url 'accounts:profile' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar </a>
+      {% else %}
+        <a class="public-secondary-button" href="{% url 'core:home' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar </a>
+      {% endif %}
     </div>
   </header>
 
