@@ -148,6 +148,10 @@ class Payment(models.Model):
     def is_last_installment(self):
         return bool(self.has_installment_info and self.installment_number == self.installment_total)
 
+    @property
+    def is_installment_finished(self):
+        return bool(self.is_last_installment and self.payment_date and self.payment_date < timezone.localdate())
+
 
 class CreditCardStatementItem(models.Model):
     class Status(models.TextChoices):

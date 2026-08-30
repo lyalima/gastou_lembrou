@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -126,3 +126,28 @@ class PaymentInstallmentTests(TestCase):
         self.assertEqual([payment.installment_number for payment in response.context["payments"]], [1])
         self.assertEqual([payment.installment_number for payment in response.context["future_installments"]], [2, 3])
         self.assertContains(response, "Lançamentos futuros")
+
+    def test_last_installment_is_finished_only_after_payment_date(self):
+        tomorrow = timezone.localdate() + timedelta(days=1)
+        last_installment = Payment.objects.create(
+            user=self.user,
+            category=self.category,
+            payment_method=self.card_method,
+            title="Parcela futura",
+            amount=Decimal("100.00"),
+            payment_date=tomorrow,
+            is_installment=True,
+            installment_number=3,
+            installment_total=3,
+        )
+
+        self.assertTrue(last_installment.is_last_installment)
+        self.assertFalse(last_installment.is_installment_finished)
+
+        Payment.objects.filter(pk=last_installment.pk).update(payment_date=timezone.localdate())
+        last_installment.refresh_from_db()
+        self.assertFalse(last_installment.is_installment_finished)
+
+        Payment.objects.filter(pk=last_installment.pk).update(payment_date=timezone.localdate() - timedelta(days=1))
+        last_installment.refresh_from_db()
+        self.assertTrue(last_installment.is_installment_finished)

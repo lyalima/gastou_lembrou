@@ -22,7 +22,7 @@
         {% if object.is_credit_card_bill %}<span class="payment-bill-tag"><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Fatura</span>{% endif %}
         {% if object.is_installment %}
           {% if object.has_installment_info %}
-            {% if object.is_last_installment %}
+            {% if object.is_installment_finished %}
               <span class="payment-installment-tag payment-installment-tag-finished"><i class="fa-solid fa-check" aria-hidden="true"></i> Parcelado - {{ object.installment_number }}/{{ object.installment_total }}</span>
             {% else %}
               <span class="payment-installment-tag"><i class="fa-regular fa-clock" aria-hidden="true"></i> Parcelado - {{ object.installment_number }}/{{ object.installment_total }}</span>
