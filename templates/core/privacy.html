@@ -38,6 +38,7 @@
           <li><strong>Dados financeiros inseridos:</strong> títulos, descrições, valores, categorias, formas de pagamento, datas, agendamentos e indicação de parcelamento quando aplicável.</li>
           <li><strong>Arquivos financeiros e de suporte:</strong> imagens JPG/PNG, documentos PDF, extratos CSV/OFX, faturas de cartão de crédito em PDF, notas fiscais, comprovantes e screenshots de suporte.</li>
           <li><strong>Suporte e comunicações:</strong> mensagens, anexos e registros de emails transacionais.</li>
+          <li><strong>Interações com o Spike:</strong> perguntas, respostas, sessão da conversa e registros técnicos necessários para controle de uso e segurança.</li>
           <li><strong>Dados técnicos e de segurança:</strong> endereço IP e user-agent no aceite legal, logs, sessão e preferências locais, como tema claro/escuro.</li>
         </ul>
       </section>
@@ -50,7 +51,9 @@
 
       <section>
         <h2>4. Inteligência artificial e decisões automatizadas</h2>
-        <p>O painel pode enviar ao Gemini métricas financeiras agregadas para gerar insights. Quando um pagamento é criado sem categoria, o título do pagamento e a lista de categorias disponíveis também podem ser enviados para sugerir a classificação. Na importação de faturas de cartão, textos extraídos do PDF podem ser enviados para tentar estruturar lançamentos em data, descrição e valor antes da confirmação pelo usuário. A integração foi projetada para não enviar email, CPF, telefone nem arquivos completos de notas fiscais nesses fluxos, salvo quando a própria funcionalidade exigir tratamento do conteúdo textual extraído.</p>
+        <p>O painel pode enviar ao Gemini métricas financeiras agregadas para gerar insights. Quando um pagamento é criado sem categoria, o título do pagamento e a lista de categorias disponíveis também podem ser enviados para sugerir a classificação. Na importação de faturas de cartão, textos extraídos do PDF podem ser enviados para tentar estruturar lançamentos em data, descrição e valor antes da confirmação pelo usuário.</p>
+        <p>No Spike, a pergunta do usuário, trechos da documentação do sistema e resultados estritamente necessários das consultas internas podem ser enviados ao Gemini para produzir a resposta. Conforme a pergunta, esses resultados podem conter títulos, valores, datas, categorias, formas de pagamento, agendamentos, parcelas e informações de metas da própria conta. O modelo não recebe acesso direto ao banco de dados; consultas são executadas pelo backend com o usuário autenticado e limites predefinidos.</p>
+        <p>A integração é projetada para não enviar email, CPF, telefone, credenciais, tokens nem arquivos completos de notas fiscais ao Gemini nos fluxos do Spike. O histórico enviado ao modelo é limitado às mensagens recentes da conversa ativa. As conversas podem ser armazenadas para continuidade, controle de uso, segurança e melhoria operacional.</p>
         <p>Os resultados são informativos e não produzem, por si só, decisões com efeitos jurídicos ou impacto significativo sobre o usuário. Categorias sugeridas podem ser revisadas e alteradas posteriormente pelo titular.</p>
         <p>Quando a integração externa não estiver disponível, a plataforma poderá gerar análise automática local baseada nas mesmas métricas.</p>
       </section>

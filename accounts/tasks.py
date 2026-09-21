@@ -34,11 +34,11 @@ def send_legal_update_notification(user_id):
         subject="Atualização dos Termos de Uso e Política de Privacidade - Gastou, Lembrou!",
         title="Atualização dos Termos de Uso e Política de Privacidade",
         text_body=(
-            "Olá!\n"
-            "Estamos enviando este email para informar que atualizamos nossos Termos de Uso e Política de Privacidade."
-            "Essa atualização foi feita para refletir novas funcionalidades, incluindo importação de extratos bancários, "
-            "importação de faturas de cartão em PDF e armazenamento dos arquivos enviados para execução do serviço.\n"
-            "No próximo acesso ao sistema, será solicitado que você leia e aceite a versão atualizada dos termos para continuar usando o sistema.\n"
+            "Olá!\n\n"
+            "Estamos enviando este email para informar que atualizamos nossos Termos de Uso e Política de Privacidade.\n\n"
+            "Essa atualização descreve o assistente Spike, as consultas protegidas sobre dados financeiros, "
+            "o uso de inteligência artificial e a continuidade das conversas no sistema.\n\n"
+            "No próximo acesso ao sistema, será solicitado que você leia e aceite a versão atualizada dos termos para continuar usando o sistema.\n\n"
             "Obrigado por usar o Gastou, Lembrou!"
         ),
         to=[user.email],

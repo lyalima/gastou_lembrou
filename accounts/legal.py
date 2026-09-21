@@ -1,10 +1,10 @@
 from django.conf import settings
 
 
-TERMS_VERSION = "2026-07-16"
-PRIVACY_VERSION = "2026-07-16"
-TERMS_EFFECTIVE_DATE = "16 de julho de 2026"
-PRIVACY_EFFECTIVE_DATE = "16 de julho de 2026"
+TERMS_VERSION = "2026-09-04"
+PRIVACY_VERSION = "2026-09-04"
+TERMS_EFFECTIVE_DATE = "4 de setembro de 2026"
+PRIVACY_EFFECTIVE_DATE = "4 de setembro de 2026"
 
 
 def legal_context():
