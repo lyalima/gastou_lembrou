@@ -107,6 +107,22 @@ O projeto usa o Gemini apenas para funcionalidades específicas. Mesmo assim:
 - mantenha fallback local para falhas;
 - monitore custos e limites de uso.
 
+### Spike, RAG e tools
+
+- A identidade vem exclusivamente de `request.user`; nunca aceite um `user_id`
+  produzido pelo modelo ou enviado no texto da conversa.
+- Tools financeiras devem permanecer somente de leitura, com filtros e limites
+  declarados no backend.
+- O modelo não recebe acesso ao ORM, SQL, tokens do Google ou credenciais.
+- Documentos do RAG são versionados em `docs/knowledge_base/` e tratados como
+  referência não confiável para fins de instrução; eles não substituem o prompt
+  de segurança.
+- As respostas devem usar o menor conjunto de pagamentos necessário e limitar o
+  histórico enviado ao provedor.
+- Fechar uma conversa não deve zerar a cota mensal de mensagens.
+- Novas tools com efeito externo exigem confirmação humana explícita antes da
+  execução e testes de isolamento entre usuários.
+
 ## Checklist de deploy seguro
 
 - [ ] `DEBUG=False`.
@@ -120,6 +136,8 @@ O projeto usa o Gemini apenas para funcionalidades específicas. Mesmo assim:
 - [ ] SMTP testado.
 - [ ] Google OAuth com callback de produção correto.
 - [ ] Gemini com chave válida ou fallback aceito.
+- [ ] Base do Spike sincronizada com `sync_spike_knowledge`.
+- [ ] Tools do Spike testadas para isolamento entre usuários.
 - [ ] Migrations executadas.
 - [ ] `collectstatic` executado.
 - [ ] Uploads protegidos por autenticação.

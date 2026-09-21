@@ -20,7 +20,7 @@ O Gastou Lembrou combina controle manual de pagamentos com automações úteis:
 - dashboard mensal ou geral;
 - metas mensais de gastos com alertas por email;
 - relatórios PDF;
-- insights financeiros com Gemini;
+- insights financeiros e assistente Spike com Gemini;
 - suporte autenticado;
 - PWA básico para teste em dispositivos móveis.
 
@@ -46,6 +46,9 @@ O Gastou Lembrou combina controle manual de pagamentos com automações úteis:
   percentuais.
 - Relatório PDF mensal e envio automático no primeiro dia do mês.
 - Insights financeiros com Gemini 2.5 Flash-Lite, com fallback local.
+- Spike com LangChain/LangGraph, tools financeiras isoladas por usuário, RAG
+  documental e conversa persistente entre páginas.
+- Integração opcional com Google Agenda para pagamentos agendados selecionados.
 - Suporte autenticado por email com upload opcional de screenshot.
 - Emails HTML padronizados com fallback texto simples.
 - PWA básico com manifest e página offline.
@@ -63,6 +66,7 @@ O Gastou Lembrou combina controle manual de pagamentos com automações úteis:
 - Chart.js
 - OpenCV, Pillow e PyMuPDF
 - Gemini API
+- LangChain, LangGraph e `langchain-google-genai`
 - Gunicorn e WhiteNoise
 - Docker e Docker Compose
 
@@ -140,6 +144,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 Copy-Item .env.example .env
 python manage.py migrate
+python manage.py sync_spike_knowledge --with-embeddings
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -159,6 +164,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 cp .env.example .env
 python manage.py migrate
+python manage.py sync_spike_knowledge --with-embeddings
 python manage.py createsuperuser
 python manage.py runserver
 ```
@@ -362,16 +368,30 @@ local, normalmente ele deve apontar para:
 
 ## 🤖 Gemini e IA
 
-Para habilitar insights inteligentes e classificações baseadas em IA, configure:
+Para habilitar insights, classificações, o agente Spike e o RAG semântico,
+configure:
 
 ```env
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash-lite
 GEMINI_TIMEOUT_SECONDS=30
+GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
+SPIKE_RAG_ENABLED=True
+SPIKE_RAG_EMBEDDINGS_ENABLED=True
 ```
 
 Sem `GEMINI_API_KEY`, o projeto deve usar os fallbacks locais implementados nas
 funcionalidades em que isso é possível.
+
+Depois das migrações, sincronize a documentação do Spike:
+
+```bash
+python manage.py sync_spike_knowledge --with-embeddings
+```
+
+Sem `--with-embeddings`, a base continua funcionando com recuperação lexical.
+Em produção, o container web executa essa sincronização automaticamente depois
+das migrações.
 
 ## 📎 Uploads e mídias
 
@@ -478,3 +498,5 @@ Para produção real:
 - [Guia Docker/deploy](docs/DOCKER_DEPLOY.md)
 - [Guia para desenvolvedores](docs/DEV_GUIDE.md)
 - [Auditoria de segurança](docs/SECURITY_REVIEW.md)
+- [Arquitetura de IA do Spike](docs/SPIKE_AI_ARCHITECTURE.md)
+- [Base de conhecimento do Spike](docs/knowledge_base/)

@@ -1,0 +1,71 @@
+<div class="modal-card payment-modal calendar-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Google Agenda</span>
+      <h2 id="payment-modal-title">Agendar lembretes de pagamento</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <div class="payment-modal-body">
+    {% if not calendar_configured %}
+      <div class="assistant-empty">
+        <i class="fa-brands fa-google" aria-hidden="true"></i>
+        <h3>Google Agenda ainda não configurado</h3>
+        <p>Configure `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` para testar esta integração.</p>
+      </div>
+    {% elif not connection or not connection.is_active %}
+      <div class="assistant-empty">
+        <i class="fa-regular fa-calendar-plus" aria-hidden="true"></i>
+        <h3>Conecte seu Google Agenda</h3>
+        <p>O Spike só poderá criar eventos depois da sua autorização. Os eventos serão criados apenas para pagamentos da sua conta.</p>
+        <a class="btn-primary" href="{% url 'assistant:calendar_connect' %}">
+          <i class="fa-brands fa-google" aria-hidden="true"></i>
+          Conectar Google Agenda
+        </a>
+      </div>
+    {% else %}
+      <div class="calendar-connected-row">
+        <p class="assistant-modal-copy">
+          Conta conectada: <strong>{{ connection.google_email|default:"Google Agenda" }}</strong>.
+          Selecione quais pagamentos agendados devem virar lembretes.
+        </p>
+        <form method="post" action="{% url 'assistant:calendar_disconnect' %}" hx-post="{% url 'assistant:calendar_disconnect' %}" hx-target="#modal">
+          {% csrf_token %}
+          <button class="btn-secondary calendar-disconnect-btn" type="submit">
+            <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+            Desconectar
+          </button>
+        </form>
+      </div>
+      {% if proposals %}
+        <form method="post" action="{% url 'assistant:calendar_confirm' %}" hx-post="{% url 'assistant:calendar_confirm' %}" hx-target="#modal">
+          {% csrf_token %}
+          <div class="calendar-proposal-list calendar-proposal-select-list">
+            {% for proposal in proposals %}
+              <label class="calendar-proposal-option">
+                <input type="checkbox" name="payment_ids" value="{{ proposal.payment.pk }}" checked>
+                <span>
+                  <small>{{ proposal.date|date:"d/m/Y" }}</small>
+                  <strong>{{ proposal.title }}</strong>
+                  <em>{{ proposal.description|linebreaksbr }}</em>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          <button class="btn-primary w-full" type="submit">
+            <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+            Criar lembretes selecionados
+          </button>
+        </form>
+      {% else %}
+        <div class="assistant-empty compact">
+          <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
+          <h3>Nenhum pagamento agendado pendente</h3>
+          <p>Todos os pagamentos agendados atuais já estão salvos no Google Agenda.</p>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>

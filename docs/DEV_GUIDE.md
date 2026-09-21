@@ -181,6 +181,32 @@ GEMINI_TIMEOUT_SECONDS=30
 
 O contrato de saída está definido como JSON Schema em `dashboard/insights.py`.
 
+### Spike: agente e RAG
+
+O app `assistant` mantém o chat Spike e a integração com Google Agenda. O chat
+usa um grafo LangGraph para recuperar documentação e executar um agente
+LangChain com Gemini. As tools financeiras são somente de leitura e capturam o
+usuário autenticado no backend; o modelo não recebe um parâmetro de usuário que
+possa ser trocado pela conversa.
+
+Principais arquivos:
+
+- `assistant/graph.py`: grafo, agente e regras centrais.
+- `assistant/tools.py`: consultas financeiras permitidas e limitadas.
+- `assistant/rag.py`: ingestão e recuperação híbrida da documentação.
+- `docs/knowledge_base/`: fonte Markdown versionada.
+- `docs/SPIKE_AI_ARCHITECTURE.md`: arquitetura, segurança e implantação.
+
+Sincronização local:
+
+```bash
+python manage.py sync_spike_knowledge --with-embeddings
+```
+
+As mensagens pertencem a uma `AssistantConversation`. Minimizar ou navegar
+mantém a conversa ativa; fechar encerra a sessão atual e a próxima abertura cria
+outra. Conversas encerradas continuam contando para o limite mensal.
+
 Filtro do dashboard:
 
 - A página possui filtro `month=YYYY-MM`.

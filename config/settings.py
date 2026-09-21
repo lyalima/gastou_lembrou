@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "payments.apps.PaymentsConfig",
     "dashboard",
     "support",
+    "assistant",
     "core",
 ]
 
@@ -147,6 +148,13 @@ PROJECT_EMAIL_SITE_NAME = config("PROJECT_EMAIL_SITE_NAME", default="Gastou, Lem
 GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
 GEMINI_MODEL = config("GEMINI_MODEL", default="gemini-2.5-flash-lite")
 GEMINI_TIMEOUT_SECONDS = config("GEMINI_TIMEOUT_SECONDS", default=30, cast=int)
+SPIKE_MONTHLY_MESSAGE_LIMIT = config("SPIKE_MONTHLY_MESSAGE_LIMIT", cast=int)
+SPIKE_RAG_ENABLED = config("SPIKE_RAG_ENABLED", default=True, cast=bool)
+SPIKE_RAG_EMBEDDINGS_ENABLED = config("SPIKE_RAG_EMBEDDINGS_ENABLED", default=True, cast=bool)
+SPIKE_RAG_TOP_K = config("SPIKE_RAG_TOP_K", default=4, cast=int)
+SPIKE_HISTORY_LIMIT = config("SPIKE_HISTORY_LIMIT", default=12, cast=int)
+SPIKE_KNOWLEDGE_DIR = BASE_DIR / "docs" / "knowledge_base"
+GEMINI_EMBEDDING_MODEL = config("GEMINI_EMBEDDING_MODEL", default="models/gemini-embedding-001")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

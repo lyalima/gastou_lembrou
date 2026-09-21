@@ -14,6 +14,14 @@ if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
   python manage.py migrate --noinput
 fi
 
+if [ "${SYNC_SPIKE_KNOWLEDGE:-0}" = "1" ]; then
+  if [ "${SPIKE_BUILD_EMBEDDINGS:-0}" = "1" ]; then
+    python manage.py sync_spike_knowledge --with-embeddings
+  else
+    python manage.py sync_spike_knowledge
+  fi
+fi
+
 if [ "${RUN_COLLECTSTATIC:-0}" = "1" ]; then
   python manage.py collectstatic --noinput
 fi

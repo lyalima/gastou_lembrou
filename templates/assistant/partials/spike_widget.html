@@ -1,0 +1,16 @@
+<div class="spike-widget" data-spike-widget>
+  <div class="spike-panel-shell" data-spike-panel-shell hidden></div>
+  <button
+    class="spike-fab"
+    type="button"
+    data-spike-toggle
+    hx-get="{% url 'assistant:spike_panel' %}"
+    hx-target="[data-spike-panel-shell]"
+    hx-swap="innerHTML"
+    aria-label="Abrir Spike, assistente de gastos pessoais"
+    aria-expanded="false"
+    title="Falar com Spike"
+  >
+    <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+  </button>
+</div>

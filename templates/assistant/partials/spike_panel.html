@@ -1,0 +1,60 @@
+<section
+  class="spike-panel"
+  aria-labelledby="spike-title"
+  data-spike-conversation="{{ conversation.pk }}"
+  data-spike-close-url="{% url 'assistant:spike_close' %}"
+>
+  <header class="spike-header">
+    <div class="spike-avatar" aria-hidden="true"><i class="fa-solid fa-bolt"></i></div>
+    <div class="spike-identity">
+      <div class="spike-title-row">
+        <h2 id="spike-title">Spike</h2>
+        <span class="spike-status"><span aria-hidden="true"></span> Disponível</span>
+      </div>
+      <p>Seu assistente de gastos pessoais</p>
+    </div>
+    <div class="spike-window-actions">
+      <button class="spike-window-button" type="button" data-spike-minimize aria-label="Minimizar Spike" title="Minimizar">
+        <i class="fa-solid fa-minus" aria-hidden="true"></i>
+      </button>
+      <button class="spike-window-button" type="button" data-spike-close aria-label="Fechar e encerrar conversa" title="Fechar conversa">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+  <div class="spike-messages" data-spike-messages aria-live="polite" aria-relevant="additions">
+    {% if conversation_messages %}
+      {% for message in conversation_messages %}
+        <div class="spike-message-row spike-message-row-{{ message.role }}">
+          <span class="spike-message-author">{% if message.role == "assistant" %}Spike{% else %}Você{% endif %}</span>
+          <div class="spike-message spike-message-{{ message.role }}">{{ message.content }}</div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="spike-message-row spike-message-row-assistant">
+        <span class="spike-message-author">Spike</span>
+        <div class="spike-message spike-message-assistant">{{ greeting }}</div>
+      </div>
+    {% endif %}
+  </div>
+  <section class="spike-quick-section" aria-label="Ações rápidas do Spike">
+    <div class="spike-section-heading">
+      <h3><i class="fa-solid fa-bolt" aria-hidden="true"></i> Ações rápidas</h3>
+    </div>
+    <div class="spike-quick-actions">
+      {% for action in quick_actions %}
+        <button type="button" data-spike-quick-action="{{ action }}">{{ action }}</button>
+      {% endfor %}
+    </div>
+  </section>
+  <form class="spike-form" data-spike-form action="{% url 'assistant:spike_chat' %}" method="post">
+    {% csrf_token %}
+    <div class="spike-composer">
+      <label class="sr-only" for="spike-message">Mensagem para o Spike</label>
+      <textarea id="spike-message" name="message" rows="2" maxlength="1000" autocomplete="off" placeholder="Pergunte sobre seus gastos, pagamentos ou sobre o sistema…" required></textarea>
+    </div>
+    <button type="submit" aria-label="Enviar mensagem para o Spike" title="Enviar">
+      <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+    </button>
+  </form>
+</section>
