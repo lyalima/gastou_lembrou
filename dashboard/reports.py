@@ -117,7 +117,7 @@ class DashboardPdfBuilder:
             display_date = payment.payment_date or payment.scheduled_date
             date_label = display_date.strftime("%d/%m/%Y") if display_date else "-"
             if payment.scheduled_date:
-                date_label = f"{date_label} - Agendado"
+                date_label = f"{date_label}(Agend.)"
             title = f"{payment.title} ({payment.category.name})" if payment.category_id else payment.title
             amount_label = format_currency(payment.amount)
             if payment.has_installment_info:
