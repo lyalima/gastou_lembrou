@@ -1,12 +1,12 @@
 {% load static %}
-<aside class="app-sidebar flex border-b border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:w-72 md:flex-col md:border-b-0 md:border-r" id="app-sidebar" data-sidebar>
+<aside class="app-sidebar collapsed flex border-b border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:w-72 md:flex-col md:border-b-0 md:border-r" id="app-sidebar" data-sidebar>
   <div class="sidebar-header">
     <a href="{% url 'payments:list' %}" class="sidebar-brand">
       <img class="sidebar-logo" src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="Logo Gastou Lembrou">
       <span class="sidebar-label">Gastou, Lembrou!</span>
     </a>
-    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="true" aria-label="Encolher sidebar" title="Encolher sidebar">
-      <i class="fa-solid fa-chevron-left" data-sidebar-arrow aria-hidden="true"></i>
+    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-controls="app-sidebar" aria-expanded="false" aria-label="Expandir sidebar" title="Expandir sidebar">
+      <i class="fa-solid fa-chevron-right" data-sidebar-arrow aria-hidden="true"></i>
     </button>
   </div>
   <nav class="space-y-1 px-3 pb-4 md:flex-1">
@@ -27,15 +27,14 @@
   </nav>
   <div class="sidebar-footer">
     <div class="sidebar-theme-wrap">
-      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar para modo escuro" title="Alternar tema">
+      <button class="theme-toggle home-theme-toggle" type="button" data-theme-toggle aria-label="Alternar para modo escuro" title="Alternar tema">
         <i class="fa-solid fa-moon theme-toggle-icon" data-theme-icon aria-hidden="true"></i>
-        <span class="sidebar-label" data-theme-label>Modo escuro</span>
       </button>
     </div>
     <div class="sidebar-account">
       <details>
         <summary class="sidebar-account-summary">
-          <span class="grid h-10 w-10 place-items-center rounded-full bg-slate-900 text-sm font-semibold text-white">{{ user.initials }}</span>
+          <span class="account-avatar">{{ user.initials }}</span>
           <span class="sidebar-label min-w-0">
             <span class="block truncate text-sm font-medium">{{ user.email }}</span>
             <span class="block text-xs text-slate-500">Conta</span>

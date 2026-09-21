@@ -1,5 +1,5 @@
 {% load static %}
-const CACHE_VERSION = "gastou-lembrou-pwa-v2";
+const CACHE_VERSION = "gastou-lembrou-pwa-v11-sidebar-default-collapsed";
 const OFFLINE_URL = "{% url 'core:offline' %}";
 const STATIC_ASSETS = [
   OFFLINE_URL,

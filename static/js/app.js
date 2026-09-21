@@ -62,27 +62,185 @@ function trapModalFocus(event) {
 }
 
 function applyStoredTheme() {
+  const isPublicHome = Boolean(document.querySelector(".home-adcoach-test, .home-fintech-v5"));
   let theme = "light";
-  try {
-    theme = localStorage.getItem("gastou-lembrou-theme") || "light";
-  } catch (error) {}
+  if (!isPublicHome && !document.querySelector('[data-light-theme]')) {
+    try {
+      theme = localStorage.getItem("gastou-lembrou-theme") || "light";
+    } catch (error) {}
+  }
   document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
   updateThemeToggle();
+}
+
+function setSidebarCollapsed(sidebar, collapsed) {
+  if (!sidebar) return;
+  sidebar.classList.toggle("collapsed", collapsed);
+  const toggle = sidebar.querySelector("[data-sidebar-toggle]");
+  const arrow = toggle?.querySelector("[data-sidebar-arrow]");
+  if (arrow) {
+    arrow.classList.toggle("fa-chevron-right", collapsed);
+    arrow.classList.toggle("fa-chevron-left", !collapsed);
+  }
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.setAttribute("aria-label", collapsed ? "Expandir sidebar" : "Encolher sidebar");
+    toggle.setAttribute("title", collapsed ? "Expandir sidebar" : "Encolher sidebar");
+  }
+}
+
+function initializeSidebar() {
+  const sidebar = document.querySelector("[data-sidebar]");
+  if (!sidebar) return;
+  const desktop = window.matchMedia("(min-width: 768px)");
+  setSidebarCollapsed(sidebar, desktop.matches);
+  if (!sidebar.dataset.responsiveStateReady) {
+    desktop.addEventListener("change", (event) => setSidebarCollapsed(sidebar, event.matches));
+    sidebar.dataset.responsiveStateReady = "true";
+  }
 }
 
 function toggleTheme() {
   const isDark = document.documentElement.dataset.theme === "dark";
   const nextTheme = isDark ? "light" : "dark";
   document.documentElement.dataset.theme = nextTheme;
-  try {
-    localStorage.setItem("gastou-lembrou-theme", nextTheme);
-  } catch (error) {}
+  if (!document.querySelector(".home-adcoach-test, .home-fintech-v5")) {
+    try {
+      localStorage.setItem("gastou-lembrou-theme", nextTheme);
+    } catch (error) {}
+  }
   updateThemeToggle();
   if (document.getElementById("categoryChart")) renderDashboardCharts();
 }
 
+function getCsrfToken(root = document) {
+  return root.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+}
+
+const SPIKE_PANEL_STATE_KEY = "gastou-lembrou-spike-panel";
+
+function setSpikePanelState(state) {
+  try {
+    sessionStorage.setItem(SPIKE_PANEL_STATE_KEY, state);
+  } catch (error) {}
+}
+
+function getSpikePanelState() {
+  try {
+    return sessionStorage.getItem(SPIKE_PANEL_STATE_KEY) || "closed";
+  } catch (error) {
+    return "closed";
+  }
+}
+
+function updateSpikeToggle(widget, expanded) {
+  const toggle = widget?.querySelector("[data-spike-toggle]");
+  if (toggle) toggle.setAttribute("aria-expanded", String(expanded));
+}
+
+function minimizeSpike(shell) {
+  if (!shell) return;
+  shell.hidden = true;
+  shell.classList.remove("is-open");
+  const widget = shell.closest("[data-spike-widget]");
+  widget?.classList.add("has-active-conversation");
+  widget?.classList.remove("is-panel-open");
+  updateSpikeToggle(widget, false);
+  setSpikePanelState("minimized");
+  widget?.querySelector("[data-spike-toggle]")?.focus();
+}
+
+function appendSpikeMessage(container, text, role = "assistant") {
+  if (!container) return;
+  const row = document.createElement("div");
+  row.className = `spike-message-row spike-message-row-${role}`;
+  const author = document.createElement("span");
+  author.className = "spike-message-author";
+  author.innerText = role === "user" ? "Você" : "Spike";
+  const message = document.createElement("div");
+  message.className = `spike-message spike-message-${role}`;
+  message.innerText = text;
+  row.append(author, message);
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+  return row;
+}
+
+async function submitSpikeMessage(form, text) {
+  const messageText = String(text || "").trim();
+  if (!messageText) return;
+  const shell = form.closest("[data-spike-panel-shell]");
+  const messages = shell?.querySelector("[data-spike-messages]");
+  const input = form.elements.namedItem("message");
+  appendSpikeMessage(messages, messageText, "user");
+  if (input) input.value = "";
+  const pending = appendSpikeMessage(messages, "Spike está analisando seus dados...", "assistant");
+  pending?.querySelector(".spike-message")?.classList.add("spike-message-pending");
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+  form.setAttribute("aria-busy", "true");
+  if (messages) messages.scrollTop = messages.scrollHeight;
+  try {
+    const formData = new FormData();
+    formData.set("message", messageText);
+    const response = await fetch(form.action, {
+      method: "POST",
+      headers: {"X-CSRFToken": getCsrfToken(form), "X-Requested-With": "XMLHttpRequest"},
+      body: formData,
+    });
+    const payload = await response.json();
+    pending?.remove();
+    appendSpikeMessage(messages, payload.answer || "Não consegui responder agora. Tente novamente.", "assistant");
+  } catch (error) {
+    pending?.remove();
+    appendSpikeMessage(messages, "Não consegui falar com o Spike agora. Tente novamente em instantes.", "assistant");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+    form.removeAttribute("aria-busy");
+    input?.focus();
+  }
+}
+
+async function closeSpikeConversation(button) {
+  const shell = button.closest("[data-spike-panel-shell]");
+  const panel = button.closest("[data-spike-conversation]");
+  const form = panel?.querySelector("[data-spike-form]");
+  if (!shell || !panel) return;
+  button.disabled = true;
+  try {
+    const response = await fetch(panel.dataset.spikeCloseUrl, {
+      method: "POST",
+      headers: {"X-CSRFToken": getCsrfToken(form || panel), "X-Requested-With": "XMLHttpRequest"},
+    });
+    if (!response.ok) throw new Error("Não foi possível encerrar a conversa.");
+    shell.hidden = true;
+    shell.innerHTML = "";
+    shell.classList.remove("is-open");
+    const widget = shell.closest("[data-spike-widget]");
+    widget?.classList.remove("has-active-conversation");
+    widget?.classList.remove("is-panel-open");
+    updateSpikeToggle(widget, false);
+    setSpikePanelState("closed");
+    widget?.querySelector("[data-spike-toggle]")?.focus();
+  } catch (error) {
+    button.disabled = false;
+    appendSpikeMessage(panel.querySelector("[data-spike-messages]"), "Não consegui encerrar a conversa agora. Tente novamente.", "assistant");
+  }
+}
+
 function updateThemeToggle() {
   const isDark = document.documentElement.dataset.theme === "dark";
+  const isAuraInterface = document.body?.classList.contains("ds-aura-v3");
+  const isFintechInterface = document.body?.classList.contains("ds-fintech-v5");
+  const homeThemeColor = document.querySelector(".home-fintech-v5")
+    ? (isDark ? "#10100f" : "#fafaf8")
+    : document.querySelector(".home-adcoach-test")
+      ? (isDark ? "#050505" : "#f4f8f6")
+    : (isFintechInterface
+      ? (isDark ? "#11110f" : "#fafaf8")
+      : (isAuraInterface ? (isDark ? "#050706" : "#f4f8f6") : null));
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (homeThemeColor && themeColorMeta) themeColorMeta.content = homeThemeColor;
   document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
     const icon = button.querySelector("[data-theme-icon]");
     const label = button.querySelector("[data-theme-label]");
@@ -114,22 +272,24 @@ function renderDashboardCharts() {
   const chartText = styles.getPropertyValue("--workspace-text-soft").trim() || "#586963";
   const chartGrid = styles.getPropertyValue("--workspace-border").trim() || "#dce7e2";
   const chartSurface = styles.getPropertyValue("--workspace-surface").trim() || "#ffffff";
-  const chartBrand = styles.getPropertyValue("--workspace-brand").trim() || "#0d6b5a";
-  const chartPalette = [
-    "#047857", 
-    "#0284c7", 
-    "#d97706", 
-    "#7c3aed", 
-    "#dc2626", 
-    "#475569", 
-    "#3508b2",
-    "#b2087f",
-    "#089eb2",
-    "#e9e8ee",
-    "#08b22d",
-    "#8db208",
-    "#8208b2",
-  ];
+  const chartBrand = styles.getPropertyValue("--ds-info").trim() || "#2563eb";
+  const chartPalette = document.body.classList.contains("ds-fintech-v5")
+    ? (document.documentElement.dataset.theme === "dark"
+      ? [
+        "#60a5fa", "#fb923c", "#a78bfa", "#2dd4bf", "#fb7185",
+        "#facc15", "#38bdf8", "#e879f9", "#94a3b8", "#4ade80",
+        "#c084fc", "#fda4af", "#a3e635",
+      ]
+      : [
+        "#2563eb", "#ea580c", "#7c3aed", "#0d9488", "#e11d48",
+        "#ca8a04", "#0284c7", "#c026d3", "#64748b", "#16a34a",
+        "#9333ea", "#be123c", "#65a30d",
+      ])
+    : [
+      "#047857", "#0284c7", "#d97706", "#7c3aed", "#dc2626",
+      "#475569", "#3508b2", "#b2087f", "#089eb2", "#e9e8ee",
+      "#08b22d", "#8db208", "#8208b2",
+    ];
   const legendOptions = {
     labels: {
       color: chartText,
@@ -487,6 +647,7 @@ function updateGoalThresholdChoice(input) {
 
 document.addEventListener("DOMContentLoaded", () => {
   applyStoredTheme();
+  initializeSidebar();
   initPhoneInputs();
   document.querySelectorAll("[data-cpf-mask]").forEach(updateCpfFeedback);
   initClearableFilters();
@@ -494,10 +655,25 @@ document.addEventListener("DOMContentLoaded", () => {
   initInstallmentFields();
   initRevealOnScroll();
   registerPwaServiceWorker();
+  if (getSpikePanelState() === "open") {
+    document.querySelector("[data-spike-toggle]")?.click();
+  }
 });
 
 document.body.addEventListener("htmx:afterSwap", (event) => {
   if (event.detail.target.id === "modal") openModal();
+  if (event.detail.target.matches("[data-spike-panel-shell]")) {
+    event.detail.target.hidden = false;
+    event.detail.target.classList.add("is-open");
+    const widget = event.detail.target.closest("[data-spike-widget]");
+    widget?.classList.add("has-active-conversation");
+    widget?.classList.add("is-panel-open");
+    updateSpikeToggle(widget, true);
+    setSpikePanelState("open");
+    const messages = event.detail.target.querySelector("[data-spike-messages]");
+    if (messages) messages.scrollTop = messages.scrollHeight;
+    event.detail.target.querySelector("textarea")?.focus();
+  }
   initPhoneInputs(event.detail.target);
   initCurrencyCentInputs(event.detail.target);
   initInstallmentFields(event.detail.target);
@@ -505,6 +681,32 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
 
 document.body.addEventListener("click", (event) => {
   if (event.target.closest("[data-close-modal]") || event.target.id === "modal") closeModal();
+  const spikeToggle = event.target.closest("[data-spike-toggle]");
+  if (spikeToggle) {
+    const shell = spikeToggle.closest("[data-spike-widget]")?.querySelector("[data-spike-panel-shell]");
+    if (shell?.innerHTML.trim()) {
+      shell.hidden = !shell.hidden;
+      shell.classList.toggle("is-open", !shell.hidden);
+      const widget = spikeToggle.closest("[data-spike-widget]");
+      widget?.classList.toggle("is-panel-open", !shell.hidden);
+      updateSpikeToggle(widget, !shell.hidden);
+      setSpikePanelState(shell.hidden ? "minimized" : "open");
+      if (!shell.hidden) {
+        const messages = shell.querySelector("[data-spike-messages]");
+        if (messages) messages.scrollTop = messages.scrollHeight;
+        shell.querySelector("textarea")?.focus();
+      }
+    }
+  }
+  const spikeMinimize = event.target.closest("[data-spike-minimize]");
+  if (spikeMinimize) minimizeSpike(spikeMinimize.closest("[data-spike-panel-shell]"));
+  const spikeClose = event.target.closest("[data-spike-close]");
+  if (spikeClose) closeSpikeConversation(spikeClose);
+  const spikeQuickAction = event.target.closest("[data-spike-quick-action]");
+  if (spikeQuickAction) {
+    const form = spikeQuickAction.closest("[data-spike-panel-shell]")?.querySelector("[data-spike-form]");
+    if (form) submitSpikeMessage(form, spikeQuickAction.dataset.spikeQuickAction);
+  }
   const clearFilterButton = event.target.closest("[data-clear-filter]");
   if (clearFilterButton) {
     const input = clearFilterButton.closest(".clearable-filter-field")?.querySelector("input");
@@ -526,15 +728,7 @@ document.body.addEventListener("click", (event) => {
   const sidebarToggle = event.target.closest("[data-sidebar-toggle]");
   if (sidebarToggle) {
     const sidebar = document.querySelector("[data-sidebar]");
-    const isCollapsed = sidebar?.classList.toggle("collapsed");
-    const arrow = sidebarToggle.querySelector("[data-sidebar-arrow]");
-    if (arrow) {
-      arrow.classList.toggle("fa-chevron-right", Boolean(isCollapsed));
-      arrow.classList.toggle("fa-chevron-left", !isCollapsed);
-    }
-    sidebarToggle.setAttribute("aria-expanded", String(!isCollapsed));
-    sidebarToggle.setAttribute("aria-label", isCollapsed ? "Expandir sidebar" : "Encolher sidebar");
-    sidebarToggle.setAttribute("title", isCollapsed ? "Expandir sidebar" : "Encolher sidebar");
+    setSidebarCollapsed(sidebar, !sidebar?.classList.contains("collapsed"));
   }
   const passwordToggle = event.target.closest("[data-toggle-password]");
   if (passwordToggle) {
@@ -565,12 +759,27 @@ document.body.addEventListener("click", (event) => {
   }
 });
 
+document.body.addEventListener("submit", (event) => {
+  const spikeForm = event.target.closest("[data-spike-form]");
+  if (!spikeForm) return;
+  event.preventDefault();
+  submitSpikeMessage(spikeForm, spikeForm.elements.namedItem("message")?.value);
+});
+
 document.addEventListener("keydown", (event) => {
   const modal = document.getElementById("modal");
   if (event.key === "Escape" && modal?.classList.contains("flex")) {
     event.preventDefault();
     closeModal();
     return;
+  }
+  if (event.key === "Escape") {
+    const spikeShell = document.querySelector("[data-spike-panel-shell].is-open");
+    if (spikeShell) {
+      event.preventDefault();
+      minimizeSpike(spikeShell);
+      return;
+    }
   }
   trapModalFocus(event);
 });

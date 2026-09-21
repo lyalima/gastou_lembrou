@@ -3,7 +3,7 @@
 {% load socialaccount %}
 {% block title %}Entrar | Gastou, Lembrou!{% endblock %}
 {% block public_content %}
-<main class="auth-shell" id="main-content">
+<main class="auth-shell auth-shell-white" id="main-content" data-light-theme>
   <form method="post" class="auth-card">
     {% csrf_token %}
     {% include "partials/auth_brand.html" %}

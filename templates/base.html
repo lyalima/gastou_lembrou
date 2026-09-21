@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0d6b5a">
+  <meta name="theme-color" content="#f4f8f6">
   <meta name="application-name" content="Gastou Lembrou">
   <meta name="apple-mobile-web-app-title" content="Gastou Lembrou">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,15 +21,21 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.1/build/css/intlTelInput.css">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20260912-sidebar-default-collapsed">
   <script>
     try {
-      const storedTheme = localStorage.getItem("gastou-lembrou-theme");
-      if (storedTheme === "dark") document.documentElement.dataset.theme = "dark";
+      {% if request.resolver_match.url_name == 'account_login' or request.resolver_match.url_name == 'account_signup' %}
+        document.documentElement.dataset.theme = "light";
+      {% elif request.resolver_match.namespace == "core" and request.resolver_match.url_name == "home" %}
+        document.documentElement.dataset.theme = "light";
+      {% else %}
+        const storedTheme = localStorage.getItem("gastou-lembrou-theme");
+        document.documentElement.dataset.theme = storedTheme === "dark" ? "dark" : "light";
+      {% endif %}
     } catch (error) {}
   </script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900" {% if user.is_authenticated %}data-authenticated="true"{% endif %}>
+<body class="ds-ui-v2 {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'home' %}ds-aura-v3{% else %}ds-fintech-v5{% endif %} min-h-screen bg-slate-50 text-slate-900" {% if user.is_authenticated %}data-authenticated="true"{% endif %}>
   <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
   {% if user.is_authenticated and request.resolver_match.url_name != "terms" and request.resolver_match.url_name != "privacy" and request.resolver_match.url_name != "account_logout" %}
     <div class="min-h-screen md:flex" data-auth-shell>
@@ -45,6 +51,6 @@
   {% endif %}
   <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1"></div>
   <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.8.1/build/js/intlTelInput.min.js"></script>
-  <script src="{% static 'js/app.js' %}"></script>
+  <script src="{% static 'js/app.js' %}?v=20260912-sidebar-default-collapsed"></script>
 </body>
 </html>

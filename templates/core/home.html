@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Gastou, Lembrou!{% endblock %}
 {% block public_content %}
-<main class="public-shell home-page" id="main-content">
+<main class="public-shell home-page home-adcoach-test home-fintech-v5" id="main-content">
   <section class="home-hero">
     <header class="public-topbar home-topbar">
       <div class="public-topbar-inner">
@@ -10,57 +10,75 @@
           <img src="{% static 'img/gastou-lembrou-logo.png' %}" width="48" height="48" alt="">
           <span>Gastou, Lembrou!</span>
         </a>
-        <nav class="public-actions" aria-label="Acesso à conta">
+        <nav class="home-primary-nav" aria-label="Navegação principal">
+          <a href="#recursos">Recursos</a>
+          <a href="#como-funciona">Como funciona</a>
+        </nav>
+        <nav class="public-actions" aria-label="Acesso à conta e aparência">
           <a class="btn-primary" href="{% url 'account_signup' %}">Começar Agora</a>
           <a class="public-secondary-button" href="{% url 'account_login' %}">Já Tenho Conta</a>
+          <button class="home-theme-toggle" type="button" data-theme-toggle aria-label="Alternar para modo escuro" title="Modo escuro">
+            <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+          </button>
         </nav>
       </div>
     </header>
 
     <div class="home-hero-inner">
       <div class="home-hero-content" data-reveal>
-        <p class="home-eyebrow">Controle financeiro com lembretes inteligentes</p>
-        <h1>Gastou, Lembrou!</h1>
+        <p class="home-eyebrow"><span aria-hidden="true"></span> Controle financeiro com inteligência</p>
+        <h1><span>Gastou,</span> <strong>Lembrou!</strong></h1>
         <p>Organize gastos, comprovantes e vencimentos sem perder o ritmo. Cadastre pagamentos, importe extratos, acompanhe metas mensais e receba avisos antes das contas vencerem.</p>
         <div class="home-hero-actions">
           <a class="btn-primary btn-large" href="{% url 'account_signup' %}">
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
             <span>Começar Agora</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
           </a>
           <a class="public-secondary-button btn-large" href="{% url 'account_login' %}">Já Tenho Conta</a>
         </div>
         <dl class="home-hero-metrics" aria-label="Destaques do sistema">
           <div>
+            <dd>Relatórios mensais em</dd>
             <dt>PDF</dt>
-            <dd>Relatórios mensais</dd>
           </div>
           <div>
+            <dd>Insights financeiros com</dd>
             <dt>IA</dt>
-            <dd>Insights financeiros</dd>
           </div>
           <div>
+            <dd>Lembretes automáticos por</dd>
             <dt>Email</dt>
-            <dd>Lembretes automáticos</dd>
           </div>
         </dl>
       </div>
 
       <div class="home-product-showcase" data-reveal>
-        <img class="home-hero-image" src="{% static 'img/home-finance-hero.png' %}" width="1693" height="929" alt="Painel financeiro com gastos, comprovantes e calendário de lembretes" fetchpriority="high">
-        <div class="home-floating-card home-floating-card-total" aria-hidden="true">
-          <span>Total do mês</span>
-          <strong>R$ 2.845,90</strong>
-          <small>72% da meta mensal</small>
+        <div class="home-showcase-toolbar" aria-hidden="true">
+          <div>
+            <span class="home-showcase-dot home-showcase-dot-danger"></span>
+            <span class="home-showcase-dot home-showcase-dot-warning"></span>
+            <span class="home-showcase-dot home-showcase-dot-success"></span>
+          </div>
+          <span>Visão financeira</span>
+          <i class="fa-solid fa-ellipsis"></i>
         </div>
-        <div class="home-floating-card home-floating-card-alert" aria-hidden="true">
-          <i class="fa-regular fa-bell"></i>
-          <span>Conta vence amanhã</span>
+        <div class="home-showcase-media">
+          <img class="home-hero-image" src="{% static 'img/home-finance-hero.png' %}" width="1693" height="929" alt="Painel financeiro com gastos, comprovantes e calendário de lembretes" fetchpriority="high">
+          <div class="home-floating-card home-floating-card-total" aria-hidden="true">
+            <span>Total do mês</span>
+            <strong>R$ 2.845,90</strong>
+            <small><i class="fa-solid fa-arrow-trend-up"></i> 72% da meta mensal</small>
+          </div>
+          <div class="home-floating-card home-floating-card-alert" aria-hidden="true">
+            <i class="fa-regular fa-bell"></i>
+            <span>Conta vence amanhã</span>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="home-features" aria-labelledby="features-title">
+  <section class="home-features" id="recursos" aria-labelledby="features-title">
     <div class="home-section-heading" data-reveal>
       <p>Organização no Dia a Dia</p>
       <h2 id="features-title">Recursos para transformar pagamentos soltos em uma rotina clara.</h2>
@@ -80,6 +98,11 @@
         <span class="home-feature-icon home-feature-icon-amber"><i class="fa-regular fa-bell" aria-hidden="true"></i></span>
         <h3>Lembretes por Email</h3>
         <p>Receba avisos de pagamentos agendados e reduza o risco de esquecer vencimentos.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-amber"><i class="fa-regular fa-calendar-days" aria-hidden="true"></i></span>
+        <h3>Conexão com Google Agenda</h3>
+        <p>Conecte o seu Google Agenda e permita que os pagamentos agendados sejam marcados.</p>
       </article>
       <article class="home-feature-card" data-reveal>
         <span class="home-feature-icon home-feature-icon-rose"><i class="fa-solid fa-bullseye" aria-hidden="true"></i></span>
@@ -102,6 +125,11 @@
         <p>Gere análises mensais para entender variações, padrões e pontos de atenção.</p>
       </article>
       <article class="home-feature-card" data-reveal>
+        <span class="home-feature-icon home-feature-icon-violet"><i class="fa-solid fa-robot" aria-hidden="true"></i></span>
+        <h3>Assistente Virtual</h3>
+        <p>Fale com o Spike e peça ajuda sobre o que precisar.</p>
+      </article>
+      <article class="home-feature-card" data-reveal>
         <span class="home-feature-icon home-feature-icon-slate"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i></span>
         <h3>Relatórios PDF</h3>
         <p>Baixe relatórios mensais com totais, categorias, formas de pagamento e evolução.</p>
@@ -109,7 +137,7 @@
     </div>
   </section>
 
-  <section class="home-flow" aria-labelledby="flow-title">
+  <section class="home-flow" id="como-funciona" aria-labelledby="flow-title">
     <div class="home-section-heading" data-reveal>
       <p>Do Registro ao Lembrete</p>
       <h2 id="flow-title">Um fluxo simples para manter suas contas sob controle.</h2>

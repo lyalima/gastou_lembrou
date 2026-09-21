@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design System V5 - Quiet Fintech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0d0d0c;
+      --graphite: #4a4a46;
+      --muted: #92928d;
+      --paper: #fafaf8;
+      --surface: #ffffff;
+      --soft: #f3f3f0;
+      --line: #e4e4df;
+      --line-strong: #cfcfc8;
+      --radius: 8px;
+      --page: min(1180px, calc(100% - 40px));
+      --shadow: 0 14px 35px rgba(15, 15, 13, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: Manrope, sans-serif; letter-spacing: 0; }
+    .page { width: var(--page); margin: auto; }
+    .topbar { border-bottom: 1px solid var(--line); background: var(--surface); }
+    .topbar .page { display: flex; min-height: 68px; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 800; }
+    .version { color: var(--graphite); font-size: 0.72rem; }
+    .hero { border-bottom: 1px solid var(--line); background: var(--surface); padding: 88px 0 78px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr 0.95fr; align-items: center; gap: 72px; }
+    .kicker { color: var(--ink); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+    h1 { margin: 20px 0 0; font-size: clamp(3.2rem, 7vw, 6.2rem); font-weight: 600; line-height: 0.96; }
+    .lead { max-width: 610px; margin: 25px 0 0; color: var(--graphite); font-size: 1rem; line-height: 1.75; }
+    .demo { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .demo-head { display: flex; height: 46px; align-items: center; gap: 7px; border-bottom: 1px solid var(--line); padding: 0 14px; color: var(--muted); font-size: 0.65rem; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); }
+    .demo-head span:last-child { margin-left: 8px; }
+    .demo-body { padding: 26px; }
+    .activity { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); padding: 15px 0; }
+    .activity:last-child { border: 0; }
+    .icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: var(--soft); color: var(--ink); font-weight: 800; }
+    .activity strong, .activity small { display: block; }
+    .activity small { margin-top: 3px; color: var(--graphite); font-size: 0.7rem; }
+    .value { font-size: 0.75rem; font-weight: 800; }
+    .section { padding: 74px 0; }
+    .heading { display: grid; grid-template-columns: 150px 1fr; gap: 30px; margin-bottom: 38px; }
+    .heading small { color: var(--ink); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+    .heading h2 { max-width: 780px; margin: 0; font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 600; line-height: 1.05; }
+    .swatches { display: grid; grid-template-columns: repeat(6, 1fr); border: 1px solid var(--line); }
+    .semantic-swatches { grid-template-columns: repeat(4, 1fr); margin-top: 16px; }
+    .swatch { border-right: 1px solid var(--line); background: var(--surface); padding: 12px; }
+    .swatch:last-child { border: 0; }
+    .color { height: 72px; border: 1px solid var(--line); border-radius: 6px; background: var(--color); }
+    .swatch strong, .swatch code { display: block; margin-top: 8px; font-size: 0.68rem; }
+    .swatch code { color: var(--graphite); }
+    .type { margin-top: 40px; border-top: 1px solid var(--line); }
+    .type-row { display: grid; grid-template-columns: 150px 1fr; align-items: baseline; border-bottom: 1px solid var(--line); padding: 19px 0; }
+    .type-row > span { color: var(--muted); font-size: 0.68rem; }
+    .display { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 600; line-height: 0.96; }
+    .title { font-size: 2rem; font-weight: 600; }
+    .body { color: var(--graphite); line-height: 1.7; }
+    .components { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .specimen { min-height: 210px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 24px; }
+    .specimen.dark { background: var(--ink); color: var(--surface); }
+    .specimen h3 { margin: 0 0 26px; color: var(--muted); font-size: 0.68rem; text-transform: uppercase; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+    .button { display: inline-flex; min-height: 44px; align-items: center; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0 18px; color: var(--ink); text-decoration: none; font-size: 0.74rem; font-weight: 700; }
+    .button.primary { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+    .rules { color: #bcbcb6; line-height: 1.9; }
+    .note { border-left: 3px solid var(--ink); background: var(--soft); padding: 16px; color: var(--ink); font-size: 0.8rem; line-height: 1.7; }
+    footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--graphite); font-size: 0.72rem; }
+
+    @media (max-width: 800px) {
+      .hero-grid, .components { grid-template-columns: 1fr; }
+      .heading { grid-template-columns: 1fr; }
+      .swatches { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 520px) {
+      :root { --page: calc(100% - 28px); }
+      .hero { padding: 58px 0; }
+      .swatches { grid-template-columns: repeat(2, 1fr); }
+      .type-row { grid-template-columns: 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="page"><strong class="brand">Gastou, Lembrou!</strong><span class="version">V5 / Quiet Fintech</span></div></header>
+  <main>
+    <section class="hero"><div class="page hero-grid"><div><span class="kicker">Direção visual</span><h1>Finanças pessoais, sem excesso visual.</h1><p class="lead">Uma base neutra inspirada em produtos financeiros contemporâneos: muito espaço em branco, tipografia segura, bordas discretas e cores funcionais para tornar dados e estados fáceis de interpretar.</p></div><div class="demo"><div class="demo-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span>resumo-mensal</span></div><div class="demo-body"><div class="activity"><span class="icon">R$</span><div><strong>Gastos do mês</strong><small>Atualizado agora</small></div><span class="value">R$ 2.845</span></div><div class="activity"><span class="icon">✓</span><div><strong>Meta acompanhada</strong><small>72% do limite mensal</small></div><span class="value">Em dia</span></div><div class="activity"><span class="icon">!</span><div><strong>Próximo lembrete</strong><small>Conta vence amanhã</small></div><span class="value">1 dia</span></div></div></div></div></section>
+    <section class="section"><div class="page"><div class="heading"><small>01 / Fundamentos</small><h2>Uma base neutra que deixa os dados respirarem.</h2></div><div class="swatches"><div class="swatch"><div class="color" style="--color:#0d0d0c"></div><strong>Ink</strong><code>#0D0D0C</code></div><div class="swatch"><div class="color" style="--color:#4a4a46"></div><strong>Graphite</strong><code>#4A4A46</code></div><div class="swatch"><div class="color" style="--color:#92928d"></div><strong>Muted</strong><code>#92928D</code></div><div class="swatch"><div class="color" style="--color:#e4e4df"></div><strong>Line</strong><code>#E4E4DF</code></div><div class="swatch"><div class="color" style="--color:#fafaf8"></div><strong>Paper</strong><code>#FAFAF8</code></div><div class="swatch"><div class="color" style="--color:#fff"></div><strong>Surface</strong><code>#FFFFFF</code></div></div><div class="swatches semantic-swatches" aria-label="Cores semânticas"><div class="swatch"><div class="color" style="--color:#15803d"></div><strong>Success</strong><code>#15803D</code></div><div class="swatch"><div class="color" style="--color:#2563eb"></div><strong>Information</strong><code>#2563EB</code></div><div class="swatch"><div class="color" style="--color:#a56719"></div><strong>Warning</strong><code>#A56719</code></div><div class="swatch"><div class="color" style="--color:#b83b3b"></div><strong>Danger</strong><code>#B83B3B</code></div></div><div class="type"><div class="type-row"><span>Display / 600</span><div class="display">Seu mês em perspectiva.</div></div><div class="type-row"><span>Title / 600</span><div class="title">Tudo o que importa</div></div><div class="type-row"><span>Body / 500</span><div class="body">Textos diretos, ritmo confortável e alta legibilidade.</div></div></div></div></section>
+    <section class="section"><div class="page"><div class="heading"><small>02 / Componentes</small><h2>Controles familiares, produto em primeiro plano.</h2></div><div class="components"><article class="specimen"><h3>Comandos</h3><div class="buttons"><a class="button primary" href="#">Começar agora</a><a class="button primary" href="#">Criar conta</a><a class="button" href="#">Já tenho conta</a></div></article><article class="specimen"><h3>Feedback</h3><div class="note"><strong>Lembrete programado.</strong><br>Você receberá um aviso antes do vencimento.</div></article><article class="specimen dark"><h3>Contraste</h3><h2>Organização que acompanha sua rotina.</h2><p class="rules">Preto para síntese e chamadas finais.<br>Cinza para hierarquia e separação.<br>Superfícies sem decoração gratuita.</p></article><article class="specimen"><h3>Composição</h3><ul class="body"><li>Hero assimétrico e direto.</li><li>Painéis inspirados na interface real.</li><li>Cards com bordas finas e raio de 8px.</li><li>Animação apenas para entrada e feedback.</li></ul></article></div></div></section>
+  </main>
+  <footer><div class="page">Design system experimental do Gastou, Lembrou! - 2026</div></footer>
+</body>
+</html>

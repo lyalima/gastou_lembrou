@@ -9,3 +9,7 @@ db.sqlite3
 media/
 staticfiles/
 celerybeat-schedule.*
+
+# Capturas locais usadas apenas como referencia para extrair o design system.
+# Os arquivos podem conter bundles de terceiros e nao fazem parte da aplicacao.
+/design_system/refs/
