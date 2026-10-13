@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import authenticate
@@ -15,6 +16,7 @@ from django.urls import reverse
 from allauth.account.models import EmailAddress
 from allauth.account.signals import email_confirmed
 from allauth.socialaccount.models import SocialAccount, SocialLogin
+from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 
 from core.emails import email_brand_context, serialize_email_message
 from payments.models import Category, Payment
@@ -413,6 +415,30 @@ class UserModelTests(TestCase):
         self.assertTrue(settings.SOCIALACCOUNT_PROVIDERS["google"]["EMAIL_AUTHENTICATION"])
         self.assertFalse(settings.SOCIALACCOUNT_AUTO_SIGNUP)
         self.assertEqual(settings.SOCIALACCOUNT_FORMS["signup"], "accounts.forms.GoogleSignupForm")
+
+    def test_google_authentication_error_logs_missing_state_without_sensitive_values(self):
+        request = RequestFactory().get("/accounts/google/login/callback/", {"code": "secret-code"})
+        request.COOKIES[settings.SESSION_COOKIE_NAME] = "secret-session"
+        with self.assertLogs("accounts.social_adapters", level="WARNING") as captured:
+            SocialAccountAdapter().on_authentication_error(
+                request, SimpleNamespace(id="google"), extra_context={"state_id": "secret-state"}
+            )
+
+        self.assertIn("stage=state_missing", captured.output[0])
+        self.assertIn("session_cookie_present=True", captured.output[0])
+        self.assertNotIn("secret-code", captured.output[0])
+        self.assertNotIn("secret-session", captured.output[0])
+        self.assertNotIn("secret-state", captured.output[0])
+
+    def test_google_authentication_error_logs_token_error_code_only(self):
+        request = RequestFactory().get("/accounts/google/login/callback/")
+        error = OAuth2Error('Error retrieving access token: {"error":"invalid_grant","error_description":"secret-detail"}')
+        with self.assertLogs("accounts.social_adapters", level="WARNING") as captured:
+            SocialAccountAdapter().on_authentication_error(request, SimpleNamespace(id="google"), exception=error)
+
+        self.assertIn("stage=callback_error", captured.output[0])
+        self.assertIn("provider_error=invalid_grant", captured.output[0])
+        self.assertNotIn("secret-detail", captured.output[0])
 
     def test_login_shows_password_reset_link(self):
         response = self.client.get(reverse("account_login"))
