@@ -20,6 +20,8 @@ A conta deve ser usada de forma lícita e para organização dos próprios dados
 
 Sugestões de categoria, extração de faturas, insights e respostas do Spike podem conter imprecisões. O usuário deve revisar resultados automatizados antes de utilizá-los. A criação de eventos no Google Agenda depende de seleção e confirmação explícitas na interface.
 
+Criações solicitadas ao Spike também dependem de revisão e confirmação na janela. O assistente cadastra registros de organização financeira; não realiza transferências nem quita cobranças.
+
 ## Encerramento da conta
 
 A exclusão permanente pode ser solicitada na página de perfil. Registros associados são removidos conforme os processos técnicos do sistema, ressalvadas hipóteses legítimas de retenção e ciclos de backup descritos na Política de Privacidade.

@@ -15,6 +15,7 @@ Depois, em outro terminal:
 
 ```powershell
 docker compose exec web python manage.py migrate
+docker compose exec web python manage.py sync_spike_knowledge
 docker compose exec web python manage.py createsuperuser
 ```
 
@@ -107,7 +108,7 @@ Configure tambem:
 
 ## Arquivos Privados
 
-Notas fiscais, comprovantes e faturas devem ser acessados pela rota autenticada:
+Notas fiscais e comprovantes vinculados a pagamentos são acessados pela rota autenticada:
 
 ```text
 /pagamentos/<uuid>/arquivo/
@@ -115,3 +116,30 @@ Notas fiscais, comprovantes e faturas devem ser acessados pela rota autenticada:
 
 Em producao, evite servir `media/` como pasta publica. Se usar storage externo,
 prefira bucket privado ou URLs assinadas.
+
+Faturas importadas e seus itens são recursos separados; a rota acima não é um
+endpoint genérico para baixar qualquer documento. Nunca exponha o volume inteiro.
+
+## Atualizações e persistência
+
+Não sobrescreva `.env` nem execute `docker compose down -v` para atualizar: `-v`
+remove volumes, inclusive banco e mídias. Faça backup de ambos e teste restauração.
+No desenvolvimento, o código é montado em `/app`; reinicie workers após alterações
+Python. Na produção, reconstrua a imagem para incorporar código e documentação:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec web python manage.py check --deploy
+```
+
+O entrypoint do web executa migrações, sincronização do RAG e collectstatic conforme
+as flags do Compose. Não execute múltiplos Beats. O Compose de produção inclui banco
+PostgreSQL local; banco gerenciado é uma opção que exige adaptar suas configurações.
+
+O arquivo atual publica a porta 8000 e não configura TLS, domínio, proxy reverso,
+backups automáticos nem storage S3. Em Lightsail, configure DNS no Registro.br,
+proxy com certificado HTTPS e firewall, evitando acesso público direto ao app/banco/Redis.
+`USE_X_FORWARDED_PROTO` exige proxy confiável que sobrescreva o cabeçalho recebido.
+O volume `media_data` precisa de persistência e backup; WhiteNoise serve estáticos,
+não deve tornar uploads privados públicos. O PWA requer HTTPS no celular e continua
+dependente de conexão para dados financeiros, chat e gravações.

@@ -1,6 +1,6 @@
 # Ajuda e diagnóstico de problemas
 
-Versão: 1.0
+Versão: 1.1
 
 ## Email não recebido
 
@@ -16,7 +16,7 @@ Revise o formato do arquivo e a prévia. PDF digitalizado, layout desconhecido, 
 
 ## Métrica diferente do esperado
 
-Verifique o mês selecionado, a data de pagamento, a data de agendamento, o tipo do registro e se a compra é uma parcela futura. Pagamentos de fatura são excluídos do total para não duplicar compras individuais do cartão.
+Verifique o mês, a data da compra no crédito e a data prevista/pagamento nas demais formas. Dashboard, relatórios e consultas financeiras do Spike seguem essas datas. A consulta de faturas usa vencimento. Pagamentos de fatura são excluídos do total para não duplicar compras individuais.
 
 ## Google Agenda não conecta
 

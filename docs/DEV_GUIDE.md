@@ -8,7 +8,7 @@ O Gastou Lembrou é um SaaS Django para gerenciamento pessoal de pagamentos. O s
 
 Stack principal:
 
-- Python 3.11+
+- Python 3.12 (runtime Docker)
 - Django 5
 - Django Allauth
 - Celery + Redis
@@ -53,6 +53,7 @@ Regras importantes:
 - O aceite é versionado em `LegalAcceptance`, com data/hora, origem, IP e user-agent.
 - Novos cadastros Google passam por `socialaccount_signup`; logins Google de contas existentes continuam diretos.
 - As versões vigentes ficam centralizadas em `accounts/legal.py`.
+- A sessão tem limite absoluto de 24 horas, controlado por middleware; fechar o navegador não equivale a logout. Expiração em HTMX redireciona para a página completa de login.
 - A página de perfil possui exclusão permanente com confirmação textual.
 - A exclusão remove a conta, registros relacionados por cascade e arquivos de notas fiscais no armazenamento.
 
@@ -76,7 +77,7 @@ Principais models:
 - `Payment`
   - UUID como PK
   - FK para usuário
-  - FK para categoria
+  - FK opcional para categoria
   - FK opcional para forma de pagamento
   - valor
   - `payment_date`
@@ -89,6 +90,21 @@ Principais models:
     - confirmação de agendamento;
     - lembrete de 1 dia antes;
     - lembrete do dia do vencimento.
+
+Outros modelos: `CreditCard` (nome, descrição, fechamento e vencimento),
+`CreditCardStatement`/`CreditCardStatementItem` (fatura importada e itens) e
+`PaymentRecurrence` (série recorrente, âncora, intervalo e cursor).
+`Payment` também guarda cartão, vencimento calculado da fatura, grupo/número/total
+de parcelas, origem da importação e vínculo de recorrência.
+Consulte [PAYMENT_WORKFLOWS.md](PAYMENT_WORKFLOWS.md) para os ciclos e efeitos da confirmação.
+
+Importações usam prévia antes de gravar. Extratos aceitam CSV/OFX/PDF; a prévia
+fica no cache por 30 minutos e a confirmação cria somente itens selecionados,
+com forma Pix e controle de duplicidade. A leitura de PDF depende de texto extraível,
+não de OCR universal. Faturas PDF persistem documento e itens, permitem revisão,
+reconhecem indicadores de parcela e criam também o registro de pagamento da fatura,
+excluído das métricas de gastos. O indicador de carregamento não torna a análise
+do documento uma tarefa Celery: confira as views para distinguir requisições síncronas.
 
 CRUD:
 
@@ -135,7 +151,8 @@ Categorização automática:
 
 - `Payment.category` é opcional.
 - Um `post_save` agenda `payments.tasks.categorize_payment` somente quando um novo pagamento não tem categoria.
-- A seleção local tenta correspondência por nome e palavras-chave.
+- O histórico de títulos do próprio usuário é consultado antes das regras locais e da IA.
+- A escolha manual de categoria no formulário propaga para registros do mesmo usuário e título (sem diferenciar caixa e espaços nas pontas), inclusive os que já tinham outra categoria.
 - Sem correspondência clara, o Gemini recebe apenas o título e a lista de categorias existentes.
 - O resultado é validado contra os IDs existentes; a IA não cria categorias.
 - Se o usuário escolher uma categoria, nenhuma categorização automática é executada.
@@ -185,7 +202,7 @@ O contrato de saída está definido como JSON Schema em `dashboard/insights.py`.
 
 O app `assistant` mantém o chat Spike e a integração com Google Agenda. O chat
 usa um grafo LangGraph para recuperar documentação e executar um agente
-LangChain com Gemini. As tools financeiras são somente de leitura e capturam o
+LangChain com Gemini. As tools financeiras consultam dados e a tool de criação prepara apenas rascunhos; todas capturam o
 usuário autenticado no backend; o modelo não recebe um parâmetro de usuário que
 possa ser trocado pela conversa.
 
@@ -193,6 +210,8 @@ Principais arquivos:
 
 - `assistant/graph.py`: grafo, agente e regras centrais.
 - `assistant/tools.py`: consultas financeiras permitidas e limitadas.
+- `assistant/actions.py`: preparação, expiração e confirmação transacional de propostas.
+- `AssistantPaymentAction`: rascunho ligado ao dono e conversa, com prazo de 15 minutos; somente o endpoint autenticado e protegido por CSRF confirma a criação.
 - `assistant/rag.py`: ingestão e recuperação híbrida da documentação.
 - `docs/knowledge_base/`: fonte Markdown versionada.
 - `docs/SPIKE_AI_ARCHITECTURE.md`: arquitetura, segurança e implantação.
@@ -221,10 +240,13 @@ Regra de data efetiva:
 
 Para métricas mensais, o sistema usa:
 
-1. `payment_date`, quando existe.
-2. `scheduled_date`, quando `payment_date` está vazio.
+1. Crédito: `payment_date` (compra), com fallback para `scheduled_date`.
+2. Demais formas: `scheduled_date`, com fallback para `payment_date`.
 
-Isso preserva pagamentos agendados antigos que ainda possam estar com `payment_date` vazio.
+Essa regra está em `spending_date_expression` e vale para dashboard, metas, relatórios,
+filtros e ordenação. A área e página de faturas continuam usando `statement_due_date`.
+As tools financeiras do Spike também usam `spending_date_expression`, incluindo
+resumos, rankings, evolução, busca e progresso de metas. O vencimento é retornado separadamente.
 
 Relatório PDF:
 
@@ -366,6 +388,7 @@ Agendamentos atuais:
   - todo dia 1, 08:00, envia relatório do mês anterior.
 - `accounts.tasks.send_pending_legal_update_notifications`
   - envia notificações pendentes de atualização de Termos/Privacidade.
+- `payments.tasks.generate_recurring_payments`: verifica séries a cada hora, cria ocorrências faltantes e mantém uma futura. Não gera uma série infinita antecipadamente.
 
 Para testar manualmente o envio do relatório mensal:
 
@@ -453,6 +476,12 @@ Públicas:
 Autenticadas:
 
 - `/pagamentos/`
+- `/pagamentos/cartoes/`
+- `/pagamentos/faturas/`
+- `/pagamentos/importar-extrato/`
+- `/pagamentos/importar-fatura-cartao/`
+- `/assistente/spike/`
+- `/assistente/google-agenda/`
 - `/dashboard/`
 - `/dashboard/relatorio.pdf?month=YYYY-MM`
 - `/suporte/`
@@ -534,6 +563,7 @@ python manage.py test accounts
 python manage.py test payments
 python manage.py test dashboard
 python manage.py test support
+python manage.py test assistant
 ```
 
 Coberturas importantes já existentes:

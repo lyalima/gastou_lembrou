@@ -3,6 +3,9 @@
 Este documento resume os principais pontos de segurança do projeto e os cuidados
 necessários antes de publicar o sistema em produção.
 
+Atualização documental: 13/10/2026. Não representa uma nova auditoria de segurança,
+varredura do histórico Git ou certificação de ausência de vulnerabilidades.
+
 ## Escopo analisado
 
 - Autenticação por email/senha e Google OAuth.
@@ -111,8 +114,10 @@ O projeto usa o Gemini apenas para funcionalidades específicas. Mesmo assim:
 
 - A identidade vem exclusivamente de `request.user`; nunca aceite um `user_id`
   produzido pelo modelo ou enviado no texto da conversa.
-- Tools financeiras devem permanecer somente de leitura, com filtros e limites
-  declarados no backend.
+- Tools de consulta são somente de leitura. `preparar_gasto` persiste um rascunho,
+  não um pagamento; salvar exige confirmação humana autenticada com CSRF, revalidação,
+  transação e bloqueio de linha. Propostas expiram e não podem trocar de dono/conversa.
+- Sessões têm prazo absoluto de 24 horas, inclusive em requisições HTMX.
 - O modelo não recebe acesso ao ORM, SQL, tokens do Google ou credenciais.
 - Documentos do RAG são versionados em `docs/knowledge_base/` e tratados como
   referência não confiável para fins de instrução; eles não substituem o prompt
@@ -143,6 +148,9 @@ O projeto usa o Gemini apenas para funcionalidades específicas. Mesmo assim:
 - [ ] Uploads protegidos por autenticação.
 - [ ] Logs de Django, Celery e servidor web monitorados.
 - [ ] Backups do banco planejados.
+- [ ] Backup e restauração testados também para o volume de mídias.
+- [ ] Google Agenda com callback próprio e tokens criptografados protegidos.
+- [ ] Apenas um Beat por ambiente; tarefas e filas monitoradas.
 
 ## Comandos úteis
 

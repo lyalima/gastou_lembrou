@@ -1,6 +1,10 @@
 # Conta, privacidade e segurança
 
-Versão: 1.0
+Versão: 1.1
+
+## Duração da sessão
+
+O login tem duração máxima de 24 horas a partir da autenticação, mesmo com uso contínuo. Fechar o navegador não encerra imediatamente a sessão; fazer logout encerra. Após expirar, é necessário entrar novamente. Requisições de modais também redirecionam para a página completa de login. Sessões antigas sem o controle de prazo precisam de novo login após a atualização.
 
 ## Cadastro e autenticação
 

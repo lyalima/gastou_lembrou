@@ -11,11 +11,12 @@ Após o cadastro e o aceite dos documentos legais, o Gastou Lembrou pode tratar 
 - **Conta e autenticação:** email, senha protegida por hash, identificadores do login Google, status de verificação e datas de criação e atualização da conta.
 - **Perfil:** telefone, país ou código telefônico e CPF, quando fornecidos.
 - **Pagamentos e gastos:** títulos, descrições, valores, categorias, formas de pagamento, datas, agendamentos, parcelas e situação dos registros.
-- **Arquivos financeiros:** notas fiscais e comprovantes JPG ou PNG, documentos PDF, extratos CSV ou OFX e faturas de cartão em PDF.
+- **Arquivos financeiros:** notas fiscais e comprovantes JPG ou PNG, documentos PDF, extratos CSV/OFX/PDF e faturas de cartão em PDF.
+- **Cartões e recorrências:** nomes e descrições dos cartões, fechamento/vencimento, séries recorrentes e parcelas; não são necessários número completo, CVV ou senha bancária.
 - **Importações:** texto e lançamentos extraídos de extratos e faturas, incluindo dados que o usuário revisar antes de confirmar a criação dos pagamentos.
 - **Metas, métricas e relatórios:** valores de metas mensais, percentuais atingidos, alertas escolhidos, consolidações do dashboard e relatórios gerados.
 - **Suporte e comunicações:** mensagens de suporte, screenshots opcionais e registros técnicos dos emails transacionais enviados.
-- **Spike:** perguntas, respostas, conversa ativa e registros técnicos necessários para continuidade, segurança e controle de uso.
+- **Spike:** perguntas, respostas, conversa ativa, propostas de novos gastos e registros de confirmação/cancelamento necessários à continuidade, segurança e controle de uso.
 - **Google Agenda:** email da conta Google conectada, autorizações e tokens protegidos necessários para criar eventos selecionados pelo usuário.
 - **Segurança e preferências:** IP e user-agent associados ao aceite legal, logs, sessão e preferências locais, como o tema claro ou escuro.
 
