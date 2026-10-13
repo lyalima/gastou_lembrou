@@ -1,8 +1,10 @@
 from django.urls import path
 
 from .views import (
+    CreditCardListView, CreditCardCreateView, CreditCardUpdateView, CreditCardInvoiceListView,
     CategoryCreateView,
     BankStatementImportView,
+    BankStatementConfirmView,
     CreditCardStatementConfirmView,
     CreditCardStatementImportView,
     PaymentCreateView,
@@ -16,9 +18,14 @@ from .views import (
 app_name = "payments"
 
 urlpatterns = [
+    path("cartoes/", CreditCardListView.as_view(), name="cards"),
+    path("faturas/", CreditCardInvoiceListView.as_view(), name="invoices"),
+    path("cartoes/novo/", CreditCardCreateView.as_view(), name="card_create"),
+    path("cartoes/<int:pk>/editar/", CreditCardUpdateView.as_view(), name="card_update"),
     path("", PaymentListView.as_view(), name="list"),
     path("novo/", PaymentCreateView.as_view(), name="create"),
     path("importar-extrato/", BankStatementImportView.as_view(), name="statement_import"),
+    path("importar-extrato/confirmar/", BankStatementConfirmView.as_view(), name="statement_confirm"),
     path("importar-fatura-cartao/", CreditCardStatementImportView.as_view(), name="credit_card_statement_import"),
     path("faturas-cartao/<int:pk>/confirmar/", CreditCardStatementConfirmView.as_view(), name="credit_card_statement_confirm"),
     path("categorias/nova/", CategoryCreateView.as_view(), name="category_create"),

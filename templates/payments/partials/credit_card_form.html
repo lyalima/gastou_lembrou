@@ -1,0 +1,58 @@
+<div class="modal-card payment-modal credit-card-modal">
+  <header class="payment-modal-header">
+    <div class="credit-card-modal-title">
+      <span class="credit-card-modal-icon" aria-hidden="true"><i class="fa-regular fa-credit-card"></i></span>
+      <div>
+        <span class="payment-modal-kicker">Cartão de crédito</span>
+        <h2 id="payment-modal-title">{% if object %}Editar cartão{% else %}Novo cartão{% endif %}</h2>
+      </div>
+    </div>
+    <button class="modal-close-btn" type="button" data-close-modal aria-label="Fechar" title="Fechar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+  </header>
+  <form method="post" hx-post="{{ request.path }}" hx-target="#modal" class="payment-modal-form" autocomplete="off">
+    {% csrf_token %}
+    <div class="payment-modal-body credit-card-modal-body">
+      {% if form.non_field_errors %}<div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+      <section class="credit-card-form-section" aria-labelledby="credit-card-identification-title">
+        <h3 id="credit-card-identification-title">Identificação</h3>
+        <div class="form-field">
+          <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+          {{ form.name }}
+          {{ form.name.errors }}
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {{ form.description.errors }}
+        </div>
+      </section>
+
+      <section class="credit-card-form-section credit-card-cycle-section" aria-labelledby="credit-card-cycle-title">
+        <h3 id="credit-card-cycle-title">Ciclo da fatura</h3>
+        <div class="credit-card-cycle-grid">
+          <div class="form-field credit-card-day-field">
+            <span class="credit-card-day-icon" aria-hidden="true"><i class="fa-solid fa-calendar-day"></i></span>
+            <div>
+              <label class="form-label" for="{{ form.closing_day.id_for_label }}">Fechamento</label>
+              {{ form.closing_day }}
+            </div>
+            {{ form.closing_day.errors }}
+          </div>
+          <div class="form-field credit-card-day-field">
+            <span class="credit-card-day-icon" aria-hidden="true"><i class="fa-solid fa-calendar-check"></i></span>
+            <div>
+              <label class="form-label" for="{{ form.due_day.id_for_label }}">Vencimento</label>
+              {{ form.due_day }}
+            </div>
+            {{ form.due_day.errors }}
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer class="payment-modal-footer">
+      <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+      <button class="btn-primary" type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i> Salvar cartão</button>
+    </footer>
+  </form>
+</div>

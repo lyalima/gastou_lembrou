@@ -125,7 +125,7 @@ class PaymentInstallmentTests(TestCase):
 
         self.assertEqual([payment.installment_number for payment in response.context["payments"]], [1])
         self.assertEqual([payment.installment_number for payment in response.context["future_installments"]], [2, 3])
-        self.assertContains(response, "Lançamentos futuros")
+        self.assertContains(response, "Parcelas futuras")
 
     def test_last_installment_is_finished_only_after_payment_date(self):
         tomorrow = timezone.localdate() + timedelta(days=1)

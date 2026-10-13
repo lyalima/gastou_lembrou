@@ -188,18 +188,39 @@ async function submitSpikeMessage(form, text) {
       headers: {"X-CSRFToken": getCsrfToken(form), "X-Requested-With": "XMLHttpRequest"},
       body: formData,
     });
+    if (response.redirected) { window.location.assign(response.url); return; }
     const payload = await response.json();
     pending?.remove();
     appendSpikeMessage(messages, payload.answer || "Não consegui responder agora. Tente novamente.", "assistant");
+    const actions = shell.querySelector("[data-spike-payment-actions]");
+    if (actions) {
+      actions.innerHTML = payload.actions_html || "";
+      messages.appendChild(actions);
+      messages.scrollTop = messages.scrollHeight;
+      openSpikeReview(actions);
+    }
   } catch (error) {
     pending?.remove();
     appendSpikeMessage(messages, "Não consegui falar com o Spike agora. Tente novamente em instantes.", "assistant");
   } finally {
     if (submitButton) submitButton.disabled = false;
     form.removeAttribute("aria-busy");
-    input?.focus();
+    if (!shell.querySelector("[data-spike-review][open]")) input?.focus();
   }
 }
+
+function openSpikeReview(root) {
+  const dialog = root.querySelector("[data-spike-review]");
+  if (dialog && !dialog.open) dialog.showModal();
+}
+
+document.addEventListener("cancel", (event) => {
+  if (!event.target.matches("[data-spike-review]")) return;
+  event.preventDefault();
+  const form = event.target.querySelector("form");
+  const cancel = form?.querySelector('[value="cancel"]');
+  if (cancel && !cancel.disabled) form.requestSubmit(cancel);
+}, true);
 
 async function closeSpikeConversation(button) {
   const shell = button.closest("[data-spike-panel-shell]");
@@ -554,6 +575,11 @@ function updateInstallmentField(select) {
   if (!field) return;
   const selectedLabel = select.options[select.selectedIndex]?.text || "";
   const shouldShow = isCreditCardMethodLabel(selectedLabel);
+  const cardField = form.querySelector("[data-credit-card-field]");
+  if (cardField) {
+    cardField.classList.toggle("is-hidden", !shouldShow);
+    if (!shouldShow) cardField.querySelector("select").value = "";
+  }
   field.classList.toggle("is-hidden", !shouldShow);
   field.querySelector("input[type='checkbox']")?.toggleAttribute("disabled", !shouldShow);
   if (!shouldShow) {
@@ -561,12 +587,67 @@ function updateInstallmentField(select) {
     if (checkbox) checkbox.checked = false;
   }
   updateInstallmentOptions(field);
+  updatePaymentDateLabel(form, shouldShow);
+}
+
+function updatePaymentDateLabel(form, isCard) {
+  const label = form?.querySelector("[data-payment-date-label]");
+  if (!label) return;
+  if (form.querySelector('select[name="kind"]')?.value === "credit_card_bill") {
+    label.textContent = "Data de vencimento da fatura";
+    return;
+  }
+  const installment = isCard && Boolean(form.querySelector("[data-installment-checkbox]")?.checked);
+  label.textContent = isCard ? (installment ? "Data da parcela" : "Data da compra") : "Data do pagamento";
 }
 
 function initInstallmentFields(root = document) {
   root.querySelectorAll("[data-payment-method-select]").forEach(updateInstallmentField);
   root.querySelectorAll("[data-installment-field]").forEach(updateInstallmentOptions);
 }
+
+document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-recurring-toggle]")) {
+    const options = event.target.closest("form").querySelector("[data-recurring-options]");
+    if (options) options.hidden = !event.target.checked;
+  }
+});
+
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-spike-payment-action]");
+  if (!form) return;
+  event.preventDefault();
+  const body = new FormData(form);
+  body.set("decision", event.submitter?.value || "cancel");
+  form.querySelectorAll("button").forEach(button => { button.disabled = true; });
+  const messages = form.closest("[data-spike-messages]");
+  try {
+    const response = await fetch(form.action, {method: "POST", headers: {"X-CSRFToken": getCsrfToken(form)}, body});
+    if (response.redirected) { window.location.assign(response.url); return; }
+    const payload = await response.json();
+    if (response.ok) {
+      const dialog = form.closest("dialog");
+      dialog?.close();
+      dialog?.remove();
+      appendSpikeMessage(messages, payload.answer, "assistant");
+      if (payload.confirmed) window.location.reload();
+    } else {
+      const error = form.querySelector("[data-spike-action-error]");
+      error.hidden = false;
+      error.textContent = payload.answer;
+    }
+  } catch (error) {
+    const feedback = form.querySelector("[data-spike-action-error]");
+    feedback.hidden = false;
+    feedback.textContent = "Não foi possível confirmar agora. Tente novamente.";
+  } finally {
+    form.querySelectorAll("button").forEach(button => { button.disabled = false; });
+  }
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && document.body.dataset.authenticated) window.location.reload();
+});
 
 function updateInstallmentOptions(field) {
   const checkbox = field.querySelector("input[type='checkbox']");
@@ -660,6 +741,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+function setStatementAnalysisBusy(event, busy) {
+  const form = event.detail?.elt?.closest?.("[data-statement-analysis-form]");
+  if (!form) return;
+  form.setAttribute("aria-busy", String(busy));
+  const status = form.querySelector(".statement-analysis-status");
+  if (status) status.hidden = !busy;
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = busy;
+}
+
+document.body.addEventListener("htmx:beforeRequest", (event) => setStatementAnalysisBusy(event, true));
+document.body.addEventListener("htmx:afterRequest", (event) => setStatementAnalysisBusy(event, false));
+document.body.addEventListener("htmx:sendError", (event) => setStatementAnalysisBusy(event, false));
+document.body.addEventListener("htmx:timeout", (event) => setStatementAnalysisBusy(event, false));
+
 document.body.addEventListener("htmx:afterSwap", (event) => {
   if (event.detail.target.id === "modal") openModal();
   if (event.detail.target.matches("[data-spike-panel-shell]")) {
@@ -673,6 +769,7 @@ document.body.addEventListener("htmx:afterSwap", (event) => {
     const messages = event.detail.target.querySelector("[data-spike-messages]");
     if (messages) messages.scrollTop = messages.scrollHeight;
     event.detail.target.querySelector("textarea")?.focus();
+    openSpikeReview(event.detail.target);
   }
   initPhoneInputs(event.detail.target);
   initCurrencyCentInputs(event.detail.target);
@@ -767,6 +864,7 @@ document.body.addEventListener("submit", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (document.querySelector("[data-spike-review][open]")) return;
   const modal = document.getElementById("modal");
   if (event.key === "Escape" && modal?.classList.contains("flex")) {
     event.preventDefault();
@@ -810,12 +908,20 @@ document.body.addEventListener("input", (event) => {
 });
 
 document.body.addEventListener("change", (event) => {
+  if (event.target.matches('select[name="kind"]')) {
+    const form = event.target.closest("form");
+    const method = form?.querySelector("[data-payment-method-select]");
+    if (method) updatePaymentDateLabel(form, isCreditCardMethodLabel(method.options[method.selectedIndex]?.text || ""));
+  }
   if (event.target.matches("[data-payment-method-select]")) {
     updateInstallmentField(event.target);
   }
   if (event.target.matches("[data-installment-checkbox]")) {
     const field = event.target.closest("[data-installment-field]");
-    if (field) updateInstallmentOptions(field);
+    if (field) {
+      updateInstallmentOptions(field);
+      updatePaymentDateLabel(field.closest("form"), !field.classList.contains("is-hidden"));
+    }
   }
   if (event.target.matches("[data-installment-total]")) {
     const field = event.target.closest("[data-installment-field]");

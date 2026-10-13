@@ -1,0 +1,14 @@
+{% for action in payment_actions %}
+<dialog class="spike-review-dialog" data-spike-review aria-labelledby="spike-review-title-{{ action.pk }}">
+<form class="spike-payment-action" method="post" action="{% url 'assistant:payment_action' action.pk %}" data-spike-payment-action>
+  {% csrf_token %}
+  <h3 id="spike-review-title-{{ action.pk }}">Revisar {% if action.operation == "create" %}novo gasto{% else %}alteração{% endif %}</h3>
+  <div class="spike-review-body">
+  <dl>{% for field in action.review_fields %}<dt>{{ field.label }}</dt><dd>{{ field.value }}</dd>{% endfor %}</dl>
+  <p class="form-help-text">Confira os dados antes de confirmar. A proposta expira em 15 minutos.</p>
+  <p data-spike-action-error role="alert" hidden></p>
+  </div>
+  <div class="spike-action-buttons"><button class="btn-secondary" type="submit" name="decision" value="cancel" autofocus>Cancelar</button><button class="btn-primary" type="submit" name="decision" value="confirm">Confirmar {% if action.operation == "create" %}criação{% else %}alteração{% endif %}</button></div>
+</form>
+</dialog>
+{% endfor %}

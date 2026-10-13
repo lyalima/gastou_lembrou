@@ -1,0 +1,47 @@
+<div class="modal-card payment-modal credit-card-statement-modal">
+  <header class="payment-modal-header">
+    <div>
+      <span class="payment-modal-kicker">Prévia do extrato</span>
+      <h2 id="payment-modal-title">Saídas encontradas</h2>
+    </div>
+    <button type="button" class="modal-close-btn" data-close-modal aria-label="Fechar modal" title="Fechar">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </header>
+  <div class="payment-modal-body">
+    {% if selection_error %}<div class="payment-form-alert" role="alert">{{ selection_error }}</div>{% endif %}
+    <section class="payment-form-section" aria-labelledby="statement-preview-summary">
+      <h3 id="statement-preview-summary">Resultado da leitura</h3>
+      <p class="form-help-text">Saídas para revisão: <strong>{{ rows|length }}</strong>{% if skipped %} · Duplicatas ignoradas: {{ skipped }}{% endif %}{% if ignored_income %} · Entradas ignoradas: {{ ignored_income }}{% endif %}</p>
+      {% if rows %}<p class="payment-form-help">Selecione as saídas que deseja importar. Os pagamentos serão criados com forma de pagamento Pix.</p>{% endif %}
+    </section>
+    {% if rows %}
+      <form class="payment-modal-form" method="post" hx-post="{% url 'payments:statement_confirm' %}" hx-target="#modal" hx-swap="innerHTML" data-statement-analysis-form>
+        {% csrf_token %}
+        <input type="hidden" name="token" value="{{ token }}">
+        <div class="credit-card-statement-list" role="list" aria-label="Saídas detectadas no extrato">
+          {% for row in rows %}
+            <article class="credit-card-statement-item" role="listitem">
+              <label class="credit-card-statement-check">
+                <input type="checkbox" name="items" value="{{ row.id }}" checked>
+                <span>Importar</span>
+              </label>
+              <div class="statement-preview-entry">
+                <strong>{{ row.title }}</strong>
+                <span>{{ row.display_date }} · R$ {{ row.amount|floatformat:2 }}</span>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        <p class="statement-analysis-status" role="status" aria-live="polite" hidden><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Importando pagamentos...</p>
+        <footer class="payment-modal-footer credit-card-statement-footer">
+          <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>
+          <button class="btn-primary" type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i> Confirmar importação</button>
+        </footer>
+      </form>
+    {% else %}
+      <p class="payment-form-help">Todas as saídas deste arquivo já foram importadas.</p>
+      <footer class="payment-modal-footer"><button class="btn-secondary" type="button" data-close-modal>Fechar</button></footer>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Faturas{% endblock %}
+{% block content %}
+<div class="workspace-page invoices-page">
+  <header class="workspace-header">
+    <div><p class="workspace-eyebrow">Cartão de crédito</p><h1>Faturas</h1></div>
+  </header>
+
+  <section class="workspace-panel" aria-labelledby="invoice-filter-title">
+    <div class="workspace-panel-heading"><h2 id="invoice-filter-title">Consultar fatura</h2></div>
+    <form class="invoice-filter-form" action="{% url 'payments:invoices' %}" method="get">
+      <div class="form-field">
+        <label class="filter-field" for="invoice-card">Cartão</label>
+        <select class="form-input" id="invoice-card" name="card" required>
+          <option value="">Selecione um cartão</option>
+          {% for card in cards %}<option value="{{ card.pk }}" {% if selected_card.pk == card.pk %}selected{% endif %}>{{ card.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="filter-field" for="invoice-month">Mês da fatura</label>
+        <select class="form-input" id="invoice-month" name="month" required>
+          <option value="">Selecione um mês</option>
+          {% for value, month in month_options %}<option value="{{ value }}" {% if selected_month == value %}selected{% endif %}>{{ month|date:"m/Y" }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn-primary" type="submit"><i class="fa-solid fa-eye" aria-hidden="true"></i> Visualizar</button>
+    </form>
+  </section>
+
+  {% if has_selection %}
+    <section class="workspace-panel invoice-results" aria-labelledby="invoice-results-title">
+      <div class="workspace-panel-heading invoice-results-heading">
+        <div><h2 id="invoice-results-title">{{ selected_card.name }} · {{ selected_month|slice:"5:7" }}/{{ selected_month|slice:":4" }}</h2><p>{{ invoice_count }} lançamento{{ invoice_count|pluralize }} nesta fatura</p></div>
+        <strong class="invoice-total">R$ {{ invoice_total|floatformat:2 }}</strong>
+      </div>
+      {% if invoice_payments %}
+        <div class="workspace-data-list">
+          {% for payment in invoice_payments %}
+            <div class="workspace-data-row invoice-row">
+              <div>
+                <strong>{{ payment.title }}{% if payment.has_installment_info %} · {{ payment.installment_number }}/{{ payment.installment_total }}{% endif %}</strong>
+                <span>{{ payment.category.name|default:"Sem categoria" }} · Compra {{ payment.payment_date|date:"d/m/Y" }} · Vence {{ payment.statement_due_date|date:"d/m/Y" }}</span>
+              </div>
+              <div class="invoice-row-actions"><strong>R$ {{ payment.amount|floatformat:2 }}</strong><button class="icon-action-btn" type="button" hx-get="{% url 'payments:detail' payment.pk %}" hx-target="#modal" aria-label="Visualizar pagamento {{ payment.title }}" title="Visualizar"><i class="fa-solid fa-eye" aria-hidden="true"></i></button></div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="invoice-empty">Nenhum gasto vinculado a este cartão nesta fatura.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

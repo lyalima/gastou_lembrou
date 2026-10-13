@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from unittest.mock import Mock, patch
 
+from accounts.legal import TERMS_EFFECTIVE_DATE, TERMS_VERSION
 from .gemini import generate_content
 
 
@@ -16,7 +17,8 @@ class LegalPagesTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Termos de Uso e Serviço")
         self.assertContains(response, "Lembretes, relatórios e insights")
-        self.assertContains(response, "16 de julho de 2026")
+        self.assertContains(response, TERMS_EFFECTIVE_DATE)
+        self.assertContains(response, TERMS_VERSION)
 
     def test_privacy_page_is_public_and_describes_lgpd_processing(self):
         response = self.client.get(reverse("core:privacy"))

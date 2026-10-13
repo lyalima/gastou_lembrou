@@ -42,6 +42,55 @@ class AssistantConversation(models.Model):
         return f"Spike - {self.user} - {self.get_status_display()}"
 
 
+class AssistantPaymentAction(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    conversation = models.ForeignKey(AssistantConversation, on_delete=models.CASCADE, related_name="payment_actions")
+    operation = models.CharField(max_length=10, choices=[("create", "Criar"), ("update", "Editar")])
+    payload = models.JSONField()
+    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True)
+    expected_updated_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    status = models.CharField(max_length=12, default="pending", choices=[("pending", "Pendente"), ("confirmed", "Confirmado"), ("cancelled", "Cancelado")])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def review_fields(self):
+        from datetime import date
+        from payments.card_cycles import statement_due_date
+        from payments.classification import normalize_text
+        from payments.models import Category, CreditCard, PaymentMethod
+        labels = {"title": "Título", "amount": "Valor (R$)", "description": "Descrição", "payment_date": "Data de pagamento", "scheduled_date": "Data prevista", "category": "Categoria", "payment_method": "Forma de pagamento", "credit_card": "Cartão", "is_installment": "Parcelado", "installment_total": "Total de parcelas", "installment_number": "Parcela atual", "is_recurring": "Recorrente", "recurrence_frequency": "Frequência"}
+        method = PaymentMethod.objects.filter(pk=self.payload.get("payment_method")).first() if self.payload.get("payment_method") else None
+        if method and normalize_text(method.name) in {"cartao de credito", "cartao credito", "credito"}:
+            labels["payment_date"] = "Data da compra"
+        result = []
+        for field, value in self.payload.items():
+            if value not in (None, "") and field in {"category", "credit_card", "payment_method"}:
+                queryset = {"category": Category.objects.filter(Q(user=self.user) | Q(user__isnull=True)), "credit_card": CreditCard.objects.filter(user=self.user), "payment_method": PaymentMethod.objects.all()}[field]
+                value = queryset.filter(pk=value).values_list("name", flat=True).first() or "Indisponível"
+            elif value and field in {"payment_date", "scheduled_date"}:
+                value = date.fromisoformat(value).strftime("%d/%m/%Y")
+            elif field in {"is_installment", "is_recurring"}:
+                value = "Sim" if value else "Não"
+            elif field == "recurrence_frequency":
+                value = {1: "Mensal", 3: "Trimestral", 6: "Semestral", 12: "Anual"}.get(value, value)
+            result.append({"label": labels.get(field, field), "value": value if value not in (None, "") else "Remover"})
+        if self.operation == "create":
+            if not self.payload.get("payment_method"):
+                result.append({"label": "Forma de pagamento", "value": "Não informada"})
+            if not self.payload.get("category"):
+                result.append({"label": "Categoria", "value": "Seleção automática"})
+            card = CreditCard.objects.filter(pk=self.payload.get("credit_card"), user=self.user).first() if self.payload.get("credit_card") else None
+            base_date = self.payload.get("payment_date") or self.payload.get("scheduled_date")
+            if card and base_date:
+                result.append({"label": "Vencimento da fatura", "value": statement_due_date(card, date.fromisoformat(base_date)).strftime("%d/%m/%Y")})
+            if self.payload.get("is_installment"):
+                result.append({"label": "Parcelas adicionais a criar", "value": int(self.payload["installment_total"]) - 1})
+        return result
+
+
 class AssistantMessage(models.Model):
     class Role(models.TextChoices):
         USER = "user", "Usuário"

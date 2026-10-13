@@ -11,9 +11,17 @@
   </div>
   <nav class="space-y-1 px-3 pb-4 md:flex-1">
     {% with current_app=request.resolver_match.app_name %}
-    <a class="nav-link{% if current_app == 'payments' %} active{% endif %}" href="{% url 'payments:list' %}" title="Meus Pagamentos" aria-label="Meus Pagamentos" {% if current_app == 'payments' %}aria-current="page"{% endif %}>
+    <a class="nav-link{% if request.resolver_match.url_name == 'list' and current_app == 'payments' %} active{% endif %}" href="{% url 'payments:list' %}" title="Meus Pagamentos" aria-label="Meus Pagamentos" {% if request.resolver_match.url_name == 'list' and current_app == 'payments' %}aria-current="page"{% endif %}>
       <i class="nav-icon fa-solid fa-dollar-sign" aria-hidden="true"></i>
       <span class="sidebar-label">Meus Pagamentos</span>
+    </a>
+    <a class="nav-link{% if current_app == 'payments' and request.resolver_match.url_name == 'cards' %} active{% endif %}" href="{% url 'payments:cards' %}" title="Meus cartões" aria-label="Meus cartões" {% if current_app == 'payments' and request.resolver_match.url_name == 'cards' %}aria-current="page"{% endif %}>
+      <i class="nav-icon fa-regular fa-credit-card" aria-hidden="true"></i>
+      <span class="sidebar-label">Meus cartões</span>
+    </a>
+    <a class="nav-link{% if current_app == 'payments' and request.resolver_match.url_name == 'invoices' %} active{% endif %}" href="{% url 'payments:invoices' %}" title="Faturas" aria-label="Faturas" {% if current_app == 'payments' and request.resolver_match.url_name == 'invoices' %}aria-current="page"{% endif %}>
+      <i class="nav-icon fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+      <span class="sidebar-label">Faturas</span>
     </a>
     <a class="nav-link{% if current_app == 'dashboard' %} active{% endif %}" href="{% url 'dashboard:home' %}" title="Dashboard" aria-label="Dashboard" {% if current_app == 'dashboard' %}aria-current="page"{% endif %}>
       <i class="nav-icon fa-solid fa-chart-line" aria-hidden="true"></i>

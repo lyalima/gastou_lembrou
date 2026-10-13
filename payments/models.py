@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -38,6 +39,22 @@ class PaymentMethod(models.Model):
         return self.name
 
 
+class CreditCard(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="credit_cards")
+    name = models.CharField("Nome", max_length=100)
+    description = models.TextField("Descrição", max_length=200, blank=True)
+    closing_day = models.PositiveSmallIntegerField("Dia do fechamento", validators=[MinValueValidator(1), MaxValueValidator(31)])
+    due_day = models.PositiveSmallIntegerField("Dia do vencimento", validators=[MinValueValidator(1), MaxValueValidator(31)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+
+    def __str__(self):
+        return self.name
+
+
 class CreditCardStatement(models.Model):
     class Status(models.TextChoices):
         PROCESSING = "processing", "Processando"
@@ -52,8 +69,10 @@ class CreditCardStatement(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="credit_card_statements")
     file = models.FileField(upload_to="payments/credit_card_statements/")
+    credit_card = models.ForeignKey(CreditCard, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.PROCESSING)
     parser_source = models.CharField(max_length=24, choices=ParserSource.choices, blank=True)
+    due_date = models.DateField(null=True, blank=True)
     extracted_text = models.TextField(blank=True)
     error_message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -85,6 +104,10 @@ class Payment(models.Model):
     kind = models.CharField(max_length=32, choices=Kind.choices, default=Kind.EXPENSE)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name="payments", blank=True, null=True)
+    credit_card = models.ForeignKey(CreditCard, on_delete=models.RESTRICT, null=True, blank=True, related_name="payments")
+    statement_due_date = models.DateField(null=True, blank=True, db_index=True, editable=False)
+    recurrence = models.ForeignKey("PaymentRecurrence", on_delete=models.SET_NULL, null=True, blank=True, related_name="occurrences")
+    recurrence_number = models.PositiveIntegerField(null=True, blank=True, editable=False)
     is_installment = models.BooleanField(default=False)
     installment_group = models.UUIDField(blank=True, null=True, db_index=True)
     installment_number = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -111,6 +134,7 @@ class Payment(models.Model):
             models.Index(fields=["user", "scheduled_date"]),
         ]
         constraints = [
+            models.UniqueConstraint(fields=["recurrence", "recurrence_number"], name="unique_payment_recurrence_number"),
             models.UniqueConstraint(
                 fields=["user", "import_hash"],
                 condition=~models.Q(import_hash=""),
@@ -150,7 +174,8 @@ class Payment(models.Model):
 
     @property
     def is_installment_finished(self):
-        return bool(self.is_last_installment and self.payment_date and self.payment_date < timezone.localdate())
+        due_date = self.statement_due_date if self.statement_due_date else self.payment_date
+        return bool(self.is_last_installment and due_date and due_date < timezone.localdate())
 
 
 class CreditCardStatementItem(models.Model):
@@ -176,6 +201,17 @@ class CreditCardStatementItem(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.amount}"
+
+
+class PaymentRecurrence(models.Model):
+    FREQUENCIES = [(1, "Mensal"), (3, "Trimestral"), (6, "Semestral"), (12, "Anual")]
+    source = models.OneToOneField(Payment, on_delete=models.CASCADE, related_name="recurring_schedule")
+    interval_months = models.PositiveSmallIntegerField(choices=FREQUENCIES)
+    anchor_date = models.DateField()
+    next_number = models.PositiveIntegerField(default=1)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class PaymentNotification(models.Model):

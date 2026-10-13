@@ -9,6 +9,14 @@ from .categorization import choose_category_for_title
 from .models import Category, Payment, PaymentNotification
 
 
+@shared_task
+def generate_recurring_payments():
+    from .models import PaymentRecurrence
+    from .recurrences import generate_occurrences
+    for pk in PaymentRecurrence.objects.filter(active=True).values_list("pk", flat=True).iterator():
+        generate_occurrences(pk)
+
+
 def format_email_date(value):
     return value.strftime("%d/%m/%y")
 
@@ -34,9 +42,13 @@ def categorize_payment(payment_id):
         return
 
     categories = Category.objects.filter(Q(user__isnull=True) | Q(user=payment.user))
-    category = choose_category_for_title(payment.title, categories)
+    from .categorization import historical_category_match
+    from .cache import invalidate_user_payment_cache
+    category = historical_category_match(payment, categories) or choose_category_for_title(payment.title, categories)
     if category:
-        Payment.objects.filter(pk=payment.pk, category__isnull=True).update(category=category)
+        updated = Payment.objects.filter(pk=payment.pk, title=payment.title, category__isnull=True).update(category=category)
+        if updated:
+            invalidate_user_payment_cache(payment.user_id)
 
 
 @shared_task
@@ -69,16 +81,18 @@ def send_payment_reminders():
         (
             1,
             PaymentNotification.Kind.REMINDER_1_DAY,
-            lambda payment: f'''O seu pagamento '{payment.title}' no valor de R$ {payment.amount} vence amanhã. 
-                            Não esqueça de pagar!\n
-                            Obrigado por usar o Gastou, Lembrou!''',
+            lambda payment: (
+                f"O seu pagamento '{payment.title}' no valor de R$ {payment.amount} vence amanhã. "
+                "Não esqueça de pagar!\n\nObrigado por usar o Gastou, Lembrou!"
+            ),
         ),
         (
             0,
             PaymentNotification.Kind.REMINDER_DUE_TODAY,
-            lambda payment: f'''O seu pagamento '{payment.title}' vence hoje. 
-                            Não esqueça de pagar!\n
-                            Obrigado por usar o Gastou, Lembrou!''',
+            lambda payment: (
+                f"O seu pagamento '{payment.title}' vence hoje. "
+                "Não esqueça de pagar!\n\nObrigado por usar o Gastou, Lembrou!"
+            ),
         ),
     )
 

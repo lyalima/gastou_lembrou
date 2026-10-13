@@ -1,4 +1,4 @@
-import fitz
+import pymupdf
 from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from accounts.legal import PRIVACY_VERSION, TERMS_VERSION
 from accounts.models import LegalAcceptance
-from payments.models import Category, Payment, PaymentMethod
+from payments.models import Category, CreditCard, Payment, PaymentMethod
 from .insights import build_insight_dataset, gemini_insights, generate_insights, normalize_pt_br_text
 from .models import FinancialInsightSnapshot, MonthlySpendingGoal, SpendingGoalNotification
 from .tasks import check_spending_goal_alert, previous_month, send_previous_month_reports, send_spending_goal_alerts
@@ -57,6 +57,60 @@ class DashboardTests(TestCase):
         self.assertContains(response, "Sem forma")
         self.assertEqual(response.context["payment_method_labels"], ["Sem forma", "Pix"])
         self.assertEqual(response.context["payment_method_totals"], [20.0, 30.0])
+
+    def test_card_goal_and_report_use_purchase_month(self):
+        from .metrics import get_dashboard_metrics
+        from .reports import build_dashboard_report_pdf
+
+        card_method = PaymentMethod.objects.create(name="Cartão de crédito")
+        card = CreditCard.objects.create(user=self.user, name="Principal", closing_day=19, due_day=25)
+        Payment.objects.create(
+            user=self.user, title="Compra no cartão", category=self.category,
+            payment_method=card_method, credit_card=card, amount=Decimal("60.00"),
+            payment_date=date(2026, 9, 21),
+        )
+        goal = MonthlySpendingGoal.objects.create(
+            user=self.user, period_month=date(2026, 10, 1),
+            amount=Decimal("100.00"), alert_thresholds=[50],
+        )
+        self.assertEqual(get_dashboard_metrics(self.user, date(2026, 9, 1))["total"], Decimal("60.00"))
+        self.assertEqual(get_dashboard_metrics(self.user, date(2026, 10, 1))["total"], 0)
+        self.assertFalse(check_spending_goal_alert(self.user.pk, "2026-10"))
+        goal.period_month = date(2026, 9, 1)
+        goal.save()
+        self.assertTrue(check_spending_goal_alert(self.user.pk, "2026-09"))
+        self.assertEqual(SpendingGoalNotification.objects.filter(goal=goal).count(), 1)
+        pdf = pymupdf.open(stream=build_dashboard_report_pdf(self.user, date(2026, 9, 1)), filetype="pdf")
+        text = "\n".join(page.get_text() for page in pdf)
+        self.assertIn("25/10/2026", text)
+        self.assertIn("60,00", text)
+
+    def test_dashboard_summary_and_goal_follow_purchase_but_invoices_do_not(self):
+        method = PaymentMethod.objects.create(name="Cartão de crédito")
+        card = CreditCard.objects.create(user=self.user, name="Principal", closing_day=19, due_day=25)
+        with patch("dashboard.tasks.queue_spending_goal_alert_check") as queue:
+            with self.captureOnCommitCallbacks(execute=True):
+                Payment.objects.create(user=self.user, title="Compra", category=self.category, payment_method=method,
+                                       credit_card=card, amount=60, payment_date=date(2026, 9, 21))
+            queue.assert_called_with(self.user.pk, date(2026, 9, 1))
+        Payment.objects.create(user=self.user, title="Previsto", category=self.category, payment_method=self.payment_method,
+                               amount=20, scheduled_date=date(2026, 9, 23))
+        MonthlySpendingGoal.objects.create(user=self.user, period_month=date(2026, 9, 1), amount=100)
+        self.client.force_login(self.user)
+        september = self.client.get(reverse("dashboard:home"), {"month": "2026-09"}).context
+        self.assertEqual(september["total"], 80)
+        self.assertEqual(september["payment_count"], 2)
+        self.assertEqual(september["scheduled_count"], 1)
+        self.assertEqual(september["spending_goal_percentage"], 80)
+        self.assertEqual(september["card_summaries"][0]["current"], 0)
+        self.assertEqual(september["card_summaries"][0]["next"], 60)
+        self.assertIn("2026-09", [m["value"] for m in september["dashboard_months"]])
+        october = self.client.get(reverse("dashboard:home"), {"month": "2026-10"}).context
+        self.assertEqual(october["total"], 0)
+        self.assertEqual(october["payment_count"], 0)
+        self.assertEqual(october["spending_goal_spent"], 0)
+        self.assertEqual(october["card_summaries"][0]["current"], 60)
+        self.assertEqual(self.client.get(reverse("dashboard:home")).context["total"], 80)
 
     def test_dashboard_ignores_credit_card_bill_payments_in_expense_metrics(self):
         credit_card = PaymentMethod.objects.create(name="Cartão de crédito")
@@ -479,7 +533,7 @@ class DashboardTests(TestCase):
         self.assertEqual(response.context["payment_count"], 2)
         self.assertEqual(response.context["category_totals"], [50.0])
         self.assertEqual(response.context["payment_method_totals"], [50.0])
-        self.assertEqual(response.context["month_labels"], ["10/05", "15/05"])
+        self.assertEqual(response.context["month_labels"], ["10/05/2026", "15/05/2026"])
         self.assertEqual(response.context["month_totals"], [30.0, 20.0])
         self.assertEqual(response.context["evolution_title"], "Evolução ao longo do mês")
         self.assertEqual(response.context["selected_dashboard_month"], "2026-05")
@@ -571,7 +625,7 @@ class DashboardTests(TestCase):
         self.assertIn("relatorio-gastou-lembrou-2026-05.pdf", response["Content-Disposition"])
         self.assertTrue(response.content.startswith(b"%PDF"))
 
-        document = fitz.open(stream=response.content, filetype="pdf")
+        document = pymupdf.open(stream=response.content, filetype="pdf")
         text = "\n".join(page.get_text() for page in document)
         document.close()
 
@@ -582,7 +636,7 @@ class DashboardTests(TestCase):
         self.assertIn("Categoria", text)
         self.assertIn("Gastos por forma de pagamento", text)
         self.assertIn("Forma de pagamento", text)
-        self.assertIn("Mês", text)
+        self.assertIn("Evolução mensal\nData\nPagamentos", text)
         self.assertIn("Pagamentos", text)
         self.assertNotIn("Total de pagamentos", text)
         self.assertIn("Pagamentos registrados", text)

@@ -41,6 +41,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.AbsoluteSessionLifetimeMiddleware",
     "accounts.middleware.LegalAcceptanceRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -169,6 +170,10 @@ SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=not DEBUG, cast=bool
 SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=not DEBUG, cast=bool)
 CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=not DEBUG, cast=bool)
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 86400
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = False
+ACCOUNT_SESSION_REMEMBER = True
 CSRF_COOKIE_HTTPONLY = False
 SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=0 if DEBUG else 31536000, cast=int)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False, cast=bool)
@@ -215,6 +220,10 @@ else:
 PAYMENT_LIST_CACHE_TIMEOUT = config("PAYMENT_LIST_CACHE_TIMEOUT", default=300, cast=int)
 
 CELERY_BEAT_SCHEDULE = {
+    "generate-recurring-payments": {
+        "task": "payments.tasks.generate_recurring_payments",
+        "schedule": 3600.0,
+    },
     "send-payment-reminders-daily": {
         "task": "payments.tasks.send_payment_reminders",
         "schedule": 180,

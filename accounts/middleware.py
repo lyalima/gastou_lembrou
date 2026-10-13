@@ -6,6 +6,36 @@ from .legal import needs_legal_update_acceptance
 from .tasks import queue_legal_update_notification
 
 
+class AbsoluteSessionLifetimeMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from django.contrib.auth import logout
+        from django.http import HttpResponse
+        from django.utils import timezone
+        from django.utils.cache import add_never_cache_headers
+
+        authenticated = request.user.is_authenticated
+        if authenticated:
+            deadline = request.session.get("auth_expires_at")
+            # Sessions created before this policy must authenticate again.
+            if not isinstance(deadline, (float, int)) or timezone.now().timestamp() >= deadline:
+                logout(request)
+                response = redirect("account_login")
+            else:
+                response = self.get_response(request)
+        else:
+            response = self.get_response(request)
+        if request.headers.get("HX-Request") and response.status_code in (301, 302) and response.get("Location", "").startswith(reverse("account_login")):
+            location = response["Location"]
+            response = HttpResponse(status=200)
+            response["HX-Redirect"] = location
+        if authenticated or request.user.is_authenticated:
+            add_never_cache_headers(response)
+        return response
+
+
 class LegalAcceptanceRequiredMiddleware:
     allowed_url_names = {
         "legal_acceptance",

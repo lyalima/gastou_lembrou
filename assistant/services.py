@@ -12,7 +12,7 @@ from django.db.models import Q, Sum
 from django.utils import timezone
 
 from core.gemini import generate_content
-from dashboard.metrics import get_dashboard_metrics
+from dashboard.metrics import spending_date_expression, get_dashboard_metrics
 from dashboard.models import MonthlySpendingGoal
 from payments.models import Category, Payment
 
@@ -76,10 +76,12 @@ def close_active_conversation(user):
     return conversation
 
 
-def answer_spike(user, message, conversation=None):
+def answer_spike(user, message, conversation=None, allow_actions=False):
     message = str(message or "").strip()[:1000]
     conversation = conversation or get_active_conversation(user)
     intent = classify_message(message)
+    if intent == "out_of_scope" and allow_actions and _is_creation_detail_reply(conversation, message):
+        intent = "financial_question"
     if _monthly_message_limit_reached(user):
         answer = "Você atingiu o limite mensal de mensagens do Spike para manter o uso gratuito sob controle."
         _store_exchange(user, conversation, message, answer, "limit_reached")
@@ -93,9 +95,9 @@ def answer_spike(user, message, conversation=None):
             answer = OUT_OF_SCOPE_MESSAGE
         else:
             intent = "financial_question"
-            answer = _answer_with_agent_or_fallback(user, conversation, message, intent)
+            answer = _answer_with_agent_or_fallback(user, conversation, message, intent, allow_actions)
     else:
-        answer = _answer_with_agent_or_fallback(user, conversation, message, intent)
+        answer = _answer_with_agent_or_fallback(user, conversation, message, intent, allow_actions)
 
     answer = str(answer or "").strip()
     if not answer:
@@ -110,7 +112,7 @@ def answer_spike(user, message, conversation=None):
     return {"intent": intent, "allowed": is_allowed_intent(intent), "answer": answer}
 
 
-def _answer_with_agent_or_fallback(user, conversation, message, intent):
+def _answer_with_agent_or_fallback(user, conversation, message, intent, allow_actions=False):
     # Only complete quick actions have an unambiguous local contract.
     if _normalize_text(message).rstrip(".?!") in {
         _normalize_text(action).rstrip(".?!") for action in QUICK_ACTIONS
@@ -122,6 +124,8 @@ def _answer_with_agent_or_fallback(user, conversation, message, intent):
 
             stored_history = list(conversation.messages.order_by("-created_at").values("role", "content")[: settings.SPIKE_HISTORY_LIMIT])
             history = list(reversed(stored_history))
+            if allow_actions:
+                return run_spike_graph(user, message, history, allow_actions=True, conversation=conversation)
             return run_spike_graph(user, message, history)
         except Exception as exc:
             if _is_ai_rate_limit_error(exc):
@@ -142,6 +146,19 @@ def _store_exchange(user, conversation, message, answer, intent):
         ]
     )
     conversation.save(update_fields=("updated_at",))
+
+
+def _is_creation_detail_reply(conversation, message):
+    # Resolve short date/value replies locally, without an extra model request.
+    if not re.fullmatch(r"(?:\d{1,2}/\d{1,2}(?:/\d{2,4})?|(?:R\$\s*)?\d+(?:[.,]\d{2})?(?:\s+reais)?)", message.strip(), re.I):
+        return False
+    recent = list(conversation.messages.order_by("-created_at").values("role", "content")[:6])
+    if not recent or recent[0]["role"] != "assistant" or "?" not in recent[0]["content"]:
+        return False
+    return any(
+        item["role"] == "user" and re.search(r"\b(crie|criar|cadastre|cadastrar|registre|registrar|adicione)\b.*\b(gasto|pagamento|compra|despesa)\b", _normalize_text(item["content"]))
+        for item in recent
+    )
 
 
 def _model_confirms_system_scope(message):
@@ -242,15 +259,18 @@ def _scheduled_payments_answer(user):
 def _future_installments_answer(user):
     today = timezone.localdate()
     payments = (
-        Payment.objects.filter(user=user, is_installment=True, payment_date__gt=today)
-        .order_by("payment_date", "title")[:8]
+        Payment.objects.filter(user=user, is_installment=True)
+        .annotate(financial_date=spending_date_expression())
+        .filter(financial_date__gt=today)
+        .order_by("financial_date", "title")[:8]
     )
     if not payments:
         return "Você não tem parcelas futuras cadastradas no momento."
     lines = ["Estas são as próximas parcelas futuras:"]
     for payment in payments:
         installment = f"{payment.installment_number}/{payment.installment_total}" if payment.has_installment_info else "parcelado"
-        lines.append(f"- {payment.title}: {_currency(payment.amount)} em {payment.payment_date.strftime('%d/%m/%Y')} ({installment}).")
+        date_label = "data da parcela"
+        lines.append(f"- {payment.title}: {_currency(payment.amount)}, {date_label} em {payment.financial_date.strftime('%d/%m/%Y')} ({installment}).")
     return "\n".join(lines)
 
 
@@ -320,7 +340,7 @@ def _category_expenses_answer(user, message):
     payments = (
         _payments_for_month(Payment.objects.filter(user=user, category=category, kind=Payment.Kind.EXPENSE), month)
         .select_related("payment_method")
-        .order_by("-payment_date", "-created_at")
+        .order_by("-metric_date", "-created_at")
     )
     total = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
     count = payments.count()
@@ -331,7 +351,7 @@ def _category_expenses_answer(user, message):
         f"Encontrei {count} gasto(s) da categoria {category.name} em {month.strftime('%m/%Y')}, somando {_currency(total)}."
     ]
     for payment in payments[:8]:
-        date_label = payment.payment_date.strftime("%d/%m/%Y") if payment.payment_date else "sem data"
+        date_label = payment.metric_date.strftime("%d/%m/%Y") if payment.metric_date else "sem data"
         method = f" - {payment.payment_method.name}" if payment.payment_method_id else ""
         lines.append(f"- {payment.title}: {_currency(payment.amount)} em {date_label}{method}.")
     if count > 8:
@@ -345,9 +365,7 @@ def _goals_answer(user):
     if not goal:
         return "Você ainda não definiu uma meta de gastos para este mês."
     spent = (
-        Payment.objects.filter(user=user, payment_date__year=month.year, payment_date__month=month.month)
-        .aggregate(total=Sum("amount"))["total"]
-        or Decimal("0.00")
+        get_dashboard_metrics(user, month=month)["total"]
     )
     percent = (spent / goal.amount * Decimal("100")) if goal.amount else Decimal("0")
     return f"Sua meta deste mês é {_currency(goal.amount)}. Até agora você registrou {_currency(spent)}, equivalente a {percent:.1f}% da meta."
@@ -448,10 +466,9 @@ def _find_user_category(user, category_name):
 
 
 def _payments_for_month(queryset, month):
-    return queryset.filter(
-        Q(payment_date__year=month.year, payment_date__month=month.month)
-        | Q(payment_date__isnull=True, scheduled_date__year=month.year, scheduled_date__month=month.month)
-    )
+    from dashboard.metrics import filter_payments_by_report_month
+
+    return filter_payments_by_report_month(queryset, month)
 
 
 def _normalize_text(value):

@@ -19,6 +19,27 @@ CATEGORY_KEYWORDS = {
 }
 
 
+def apply_manual_category(payment):
+    from django.db import transaction
+    from django.db.models.functions import Trim
+    from django.utils import timezone
+    from .cache import invalidate_user_payment_cache
+    from .models import Payment
+
+    if not payment.category_id:
+        return 0
+    updated = (
+        Payment.objects.filter(user_id=payment.user_id)
+        .annotate(trimmed_title=Trim("title"))
+        .filter(trimmed_title__iexact=payment.title.strip())
+        .exclude(category_id=payment.category_id)
+        .update(category_id=payment.category_id, updated_at=timezone.now())
+    )
+    if updated:
+        transaction.on_commit(lambda: invalidate_user_payment_cache(payment.user_id))
+    return updated
+
+
 def choose_category_for_title(title, categories):
     categories = list(categories)
     if not title or not categories:
@@ -130,3 +151,29 @@ def normalize_text(value):
     normalized = unicodedata.normalize("NFKD", str(value or ""))
     without_accents = "".join(character for character in normalized if not unicodedata.combining(character))
     return re.sub(r"[^a-z0-9]+", " ", without_accents.casefold()).strip()
+
+
+def historical_category_match(payment, categories):
+    return category_from_history(payment.user_id, payment.title, categories, exclude_pk=payment.pk)
+
+
+def category_from_history(user_id, payment_title, categories, exclude_pk=None):
+    from difflib import SequenceMatcher
+    from .models import Payment
+
+    title = normalize_text(payment_title)
+    if not title:
+        return None
+    history = Payment.objects.filter(user_id=user_id, category__in=categories).exclude(pk=exclude_pk).select_related("category").order_by("-updated_at")
+    exact = history.filter(title__iexact=payment_title.strip()).first()
+    if exact:
+        return exact.category
+    similar = {}
+    for previous in history[:1000]:
+        previous_title = normalize_text(previous.title)
+        if previous_title == title:
+            return previous.category
+        # Conservative reuse: reject short/ambiguous merchant names and conflicting categories.
+        if len(title) >= 8 and set(title.split()) & set(previous_title.split()) and SequenceMatcher(None, title, previous_title).ratio() >= 0.93:
+            similar[previous.category_id] = previous.category
+    return next(iter(similar.values())) if len(similar) == 1 else None

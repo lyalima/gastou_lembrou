@@ -12,6 +12,7 @@
   <div class="payment-modal-body">
     <section class="payment-form-section" aria-labelledby="credit-card-preview-summary">
       <h3 id="credit-card-preview-summary">Resultado da leitura</h3>
+      <p class="form-help-text">Total de lançamentos encontrados: <strong>{{ items|length }}</strong></p>
       {% if statement.status == "failed" %}
         <div class="payment-form-alert" role="alert">{{ statement.error_message }}</div>
         <p class="payment-form-help">Esse PDF foi salvo, mas nenhum pagamento foi criado. Tente uma fatura baixada diretamente do app ou internet banking, sem ser captura de tela.</p>
@@ -19,13 +20,17 @@
         <p class="payment-form-help">
           Revise os lançamentos antes de importar. Eles serão criados como gastos comuns com forma de pagamento "Cartão de Crédito".
         </p>
-        <p class="form-help-text">Origem da leitura: {{ statement.get_parser_source_display }}.</p>
       {% endif %}
     </section>
 
     {% if items %}
       <form class="payment-modal-form" method="post" hx-post="{% url 'payments:credit_card_statement_confirm' statement.pk %}" hx-target="#modal" hx-swap="innerHTML">
         {% csrf_token %}
+        {% if due_date_error %}<div class="payment-form-alert" role="alert">{{ due_date_error }}</div>{% endif %}
+        <div class="form-field payment-form-full">
+          <label class="form-label" for="statement-due-date">Vencimento desta fatura</label>
+          <input class="form-input" id="statement-due-date" name="due_date" type="date" value="{{ statement.due_date|date:'Y-m-d' }}" required>
+        </div>
         <div class="credit-card-statement-list" role="list" aria-label="Lançamentos detectados na fatura">
           {% for item in items %}
             <article class="credit-card-statement-item" role="listitem">
@@ -39,7 +44,7 @@
                   <input class="form-input" id="title_{{ item.pk }}" name="title_{{ item.pk }}" value="{{ item.title }}">
                 </div>
                 <div class="form-field">
-                  <label class="form-label" for="date_{{ item.pk }}">Data</label>
+                  <label class="form-label" for="date_{{ item.pk }}">Data da compra</label>
                   <input class="form-input" id="date_{{ item.pk }}" name="date_{{ item.pk }}" type="date" value="{{ item.payment_date|date:'Y-m-d' }}">
                 </div>
                 <div class="form-field">

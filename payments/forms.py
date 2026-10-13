@@ -2,13 +2,26 @@ from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 
 from core.upload_validation import validate_file_extension, validate_pdf_signature, validate_receipt_signature, validate_upload_size
 
 from .classification import normalize_text
 from .image_processing import process_receipt_file
-from .models import Category, Payment, PaymentMethod
+from .models import Category, CreditCard, Payment, PaymentMethod, PaymentRecurrence
+
+
+class CreditCardForm(forms.ModelForm):
+    class Meta:
+        model = CreditCard
+        fields = ("name", "description", "closing_day", "due_day")
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-input"}),
+            "description": forms.Textarea(attrs={"class": "form-input", "rows": 2}),
+            "closing_day": forms.NumberInput(attrs={"class": "form-input", "min": 1, "max": 31}),
+            "due_day": forms.NumberInput(attrs={"class": "form-input", "min": 1, "max": 31}),
+        }
 
 
 class ReceiptFileInput(forms.ClearableFileInput):
@@ -51,16 +64,22 @@ class BankStatementImportForm(forms.Form):
         widget=forms.FileInput(
             attrs={
                 "class": "form-input",
-                "accept": ".csv,.ofx,text/csv,application/x-ofx,application/ofx",
+                "accept": ".csv,.ofx,.pdf,text/csv,application/x-ofx,application/ofx,application/pdf",
             }
         ),
-        help_text="Envie um extrato em CSV ou OFX.",
+        help_text="Envie um extrato em CSV, OFX ou PDF com texto selecionável.",
     )
 
     def clean_statement_file(self):
         statement_file = self.cleaned_data["statement_file"]
         validate_upload_size(statement_file, settings.MAX_STATEMENT_UPLOAD_MB, "extrato")
-        validate_file_extension(statement_file, {"csv", "ofx"}, "Envie um extrato em CSV ou OFX.")
+        suffix = validate_file_extension(statement_file, {"csv", "ofx", "pdf"}, "Envie um extrato em CSV, OFX ou PDF.")
+        if suffix == "pdf":
+            content_type = getattr(statement_file, "content_type", "")
+            if content_type and content_type not in {"application/pdf", "application/octet-stream"}:
+                raise forms.ValidationError("Envie um extrato em PDF válido.")
+            validate_pdf_signature(statement_file)
+            return statement_file
         allowed_content_types = {
             "text/csv",
             "application/csv",
@@ -77,6 +96,12 @@ class BankStatementImportForm(forms.Form):
 
 
 class CreditCardStatementImportForm(forms.Form):
+    credit_card = forms.ModelChoiceField(queryset=CreditCard.objects.none(), required=False, label="Cartão", widget=forms.Select(attrs={"class": "form-input"}))
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["credit_card"].queryset = CreditCard.objects.filter(user=user) if user else CreditCard.objects.none()
+
     statement_file = forms.FileField(
         label="Arquivo da fatura",
         widget=forms.FileInput(
@@ -100,6 +125,8 @@ class CreditCardStatementImportForm(forms.Form):
 
 
 class PaymentForm(forms.ModelForm):
+    is_recurring = forms.BooleanField(required=False, label="Repetir este pagamento", widget=forms.CheckboxInput(attrs={"class": "form-checkbox", "data-recurring-toggle": "true"}))
+    recurrence_frequency = forms.TypedChoiceField(required=False, coerce=int, empty_value=None, choices=[("", "Selecione a frequência"), *PaymentRecurrence.FREQUENCIES], label="Frequência", widget=forms.Select(attrs={"class": "form-input"}))
     INSTALLMENT_CHOICES = [(value, f"{value} parcelas") for value in range(2, 25)]
     INSTALLMENT_NUMBER_CHOICES = [(value, f"{value}ª parcela") for value in range(1, 25)]
 
@@ -137,6 +164,7 @@ class PaymentForm(forms.ModelForm):
             "description",
             "amount",
             "payment_method",
+            "credit_card",
             "is_installment",
             "installment_total",
             "installment_number",
@@ -150,6 +178,7 @@ class PaymentForm(forms.ModelForm):
             "kind": forms.Select(attrs={"class": "form-input"}),
             "description": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
             "payment_method": forms.Select(attrs={"class": "form-input", "data-payment-method-select": "true"}),
+            "credit_card": forms.Select(attrs={"class": "form-input"}),
             "is_installment": forms.CheckboxInput(attrs={"class": "form-checkbox", "data-installment-checkbox": "true"}),
             "payment_date": forms.DateInput(attrs={"class": "form-input", "type": "date"}, format="%Y-%m-%d"),
             "scheduled_date": forms.DateInput(attrs={"class": "form-input", "type": "date"}, format="%Y-%m-%d"),
@@ -165,6 +194,11 @@ class PaymentForm(forms.ModelForm):
         self.fields["kind"].required = False
         self.fields["kind"].initial = Payment.Kind.EXPENSE
         self.fields["payment_method"].queryset = PaymentMethod.objects.all()
+        self.fields["credit_card"].queryset = CreditCard.objects.filter(user=self.user)
+        schedule = getattr(self.instance, "recurring_schedule", None)
+        if schedule and schedule.active:
+            self.initial["is_recurring"] = True
+            self.initial["recurrence_frequency"] = schedule.interval_months
         self.fields["payment_method"].empty_label = "Selecione uma forma de pagamento"
         self.show_installment_field = self._initial_payment_method_is_credit_card()
         self.show_installment_options = self._initial_is_installment()
@@ -179,6 +213,23 @@ class PaymentForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         payment_method = cleaned_data.get("payment_method")
+        card = cleaned_data.get("credit_card")
+        if card and not self._is_credit_card_method(payment_method):
+            self.add_error("credit_card", "Selecione a forma de pagamento Cartão de crédito.")
+        if card and not (cleaned_data.get("payment_date") or cleaned_data.get("scheduled_date")):
+            self.add_error("payment_date", "Informe a data da compra para calcular a fatura.")
+        if cleaned_data.get("is_recurring"):
+            if not cleaned_data.get("recurrence_frequency"):
+                self.add_error("recurrence_frequency", "Selecione a frequência.")
+            if not (cleaned_data.get("scheduled_date") or cleaned_data.get("payment_date")):
+                self.add_error("payment_date", "Informe a data inicial da recorrência.")
+            if cleaned_data.get("is_installment"):
+                self.add_error("is_recurring", "Uma compra parcelada não pode ser recorrente.")
+            if self.instance.recurrence_id:
+                self.add_error("is_recurring", "Edite o pagamento original para configurar esta recorrência.")
+            schedule = getattr(self.instance, "recurring_schedule", None)
+            if schedule and (schedule.interval_months != cleaned_data.get("recurrence_frequency") or schedule.anchor_date != (cleaned_data.get("scheduled_date") or cleaned_data.get("payment_date"))):
+                self.add_error("is_recurring", "Para trocar a data-base ou frequência, desative esta recorrência e crie um novo pagamento recorrente. Os lançamentos já criados são preservados.")
         if not self._is_credit_card_method(payment_method):
             cleaned_data["is_installment"] = False
             cleaned_data["installment_total"] = None
@@ -200,7 +251,7 @@ class PaymentForm(forms.ModelForm):
         if installment_total and installment_number and installment_number > installment_total:
             self.add_error("installment_number", "A parcela atual não pode ser maior que o total de parcelas.")
         if not cleaned_data.get("payment_date"):
-            self.add_error("payment_date", "Informe a data do pagamento para gerar as parcelas.")
+            self.add_error("payment_date", "Informe a data da parcela para gerar as demais.")
 
         cleaned_data["installment_total"] = installment_total
         cleaned_data["installment_number"] = installment_number
@@ -216,7 +267,7 @@ class PaymentForm(forms.ModelForm):
                 amount = Decimal(normalized)
             except (InvalidOperation, ValueError):
                 raise forms.ValidationError("Informe um valor válido para o pagamento.")
-        if amount <= 0:
+        if not amount.is_finite() or amount <= 0:
             raise forms.ValidationError("O valor precisa ser maior que zero.")
         return amount.quantize(Decimal("0.01"))
 
@@ -235,11 +286,15 @@ class PaymentForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         uploaded = self.cleaned_data.get("image")
-        if uploaded:
+        if uploaded and "image" in self.changed_data:
             instance.image = process_receipt_file(uploaded)
         if commit:
-            instance.save()
-            self.save_m2m()
+            with transaction.atomic():
+                instance.save()
+                self.save_m2m()
+                if self.cleaned_data.get("category") and "category" in self.changed_data:
+                    from .categorization import apply_manual_category
+                    apply_manual_category(instance)
         return instance
 
     @staticmethod
@@ -251,9 +306,13 @@ class PaymentForm(forms.ModelForm):
 
     def _initial_payment_method_is_credit_card(self):
         field_name = self.add_prefix("payment_method")
-        if self.is_bound and self.data.get(field_name):
-            return self._is_credit_card_method(self.fields["payment_method"].queryset.filter(pk=self.data.get(field_name)).first())
-        return self._is_credit_card_method(self.initial.get("payment_method") or self.instance.payment_method)
+        value = self.data.get(field_name) if self.is_bound else self.initial.get("payment_method") or self.instance.payment_method
+        if value and not isinstance(value, PaymentMethod):
+            try:
+                value = self.fields["payment_method"].queryset.filter(pk=value).first()
+            except (ValueError, TypeError):
+                value = None
+        return self._is_credit_card_method(value)
 
     def _initial_is_installment(self):
         field_name = self.add_prefix("is_installment")

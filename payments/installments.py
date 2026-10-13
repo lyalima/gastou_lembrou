@@ -24,23 +24,23 @@ def create_installment_siblings(payment):
         if number == payment.installment_number:
             continue
         offset = number - payment.installment_number
-        created.append(
-            Payment.objects.create(
-                user=payment.user,
-                title=payment.title,
-                category=payment.category,
-                description=payment.description,
-                kind=payment.kind,
-                amount=payment.amount,
-                payment_method=payment.payment_method,
-                is_installment=True,
-                installment_group=payment.installment_group,
-                installment_number=number,
-                installment_total=payment.installment_total,
-                payment_date=add_months(payment.payment_date, offset),
-                scheduled_date=add_months(payment.scheduled_date, offset) if payment.scheduled_date else None,
-                image=payment.image,
-                credit_card_statement=payment.credit_card_statement,
-            )
+        sibling = Payment.objects.create(
+            user=payment.user,
+            title=payment.title,
+            category=payment.category,
+            description=payment.description,
+            kind=payment.kind,
+            amount=payment.amount,
+            payment_method=payment.payment_method,
+            credit_card=payment.credit_card,
+            is_installment=True,
+            installment_group=payment.installment_group,
+            installment_number=number,
+            installment_total=payment.installment_total,
+            payment_date=add_months(payment.payment_date, offset),
+            scheduled_date=add_months(payment.scheduled_date, offset) if payment.scheduled_date else None,
+            image=payment.image,
+            credit_card_statement=payment.credit_card_statement,
         )
+        created.append(sibling)
     return created

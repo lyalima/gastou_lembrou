@@ -289,26 +289,27 @@ class SpikeAssistantTests(TestCase):
         self.assertNotIn("Fast food privado da Bia", payload["answer"])
 
     def test_calendar_proposals_are_scoped_to_logged_user_and_only_scheduled(self):
+        tomorrow = timezone.localdate() + timedelta(days=1)
         Payment.objects.create(
             user=self.user,
             category=self.category,
             title="Pagamento da Ana",
             amount=Decimal("80.00"),
-            scheduled_date=date(2026, 9, 10),
+            scheduled_date=tomorrow,
         )
         Payment.objects.create(
             user=self.other_user,
             category=self.category,
             title="Pagamento da Bia",
             amount=Decimal("999.00"),
-            scheduled_date=date(2026, 9, 10),
+            scheduled_date=tomorrow,
         )
         Payment.objects.create(
             user=self.user,
             category=self.category,
             title="Parcela futura",
             amount=Decimal("50.00"),
-            payment_date=date(2026, 9, 11),
+            payment_date=tomorrow + timedelta(days=1),
             is_installment=True,
             installment_number=2,
             installment_total=3,
@@ -318,7 +319,19 @@ class SpikeAssistantTests(TestCase):
 
         self.assertEqual([proposal["payment"].title for proposal in proposals], ["Pagamento da Ana"])
 
+    def test_calendar_proposals_ignore_past_schedules(self):
+        Payment.objects.create(
+            user=self.user,
+            category=self.category,
+            title="Pagamento vencido",
+            amount=Decimal("80.00"),
+            scheduled_date=timezone.localdate() - timedelta(days=1),
+        )
+
+        self.assertEqual(build_event_proposals(self.user), [])
+
     def test_calendar_modal_renders_payment_selection_and_disconnect_button(self):
+        tomorrow = timezone.localdate() + timedelta(days=1)
         connection = GoogleCalendarConnection.objects.create(user=self.user, google_email=self.user.email)
         connection.access_token = "calendar-token"
         connection.is_active = True
@@ -328,7 +341,7 @@ class SpikeAssistantTests(TestCase):
             category=self.category,
             title="Pagamento selecionável",
             amount=Decimal("80.00"),
-            scheduled_date=date(2026, 9, 10),
+            scheduled_date=tomorrow,
         )
         self.client.force_login(self.user)
 
@@ -350,19 +363,20 @@ class SpikeAssistantTests(TestCase):
 
     @patch("assistant.views.create_calendar_events_task.delay")
     def test_calendar_confirm_uses_only_selected_payment_ids(self, delay):
+        tomorrow = timezone.localdate() + timedelta(days=1)
         first = Payment.objects.create(
             user=self.user,
             category=self.category,
             title="Pagamento escolhido",
             amount=Decimal("80.00"),
-            scheduled_date=date(2026, 9, 10),
+            scheduled_date=tomorrow,
         )
         Payment.objects.create(
             user=self.user,
             category=self.category,
             title="Pagamento não escolhido",
             amount=Decimal("90.00"),
-            scheduled_date=date(2026, 9, 11),
+            scheduled_date=tomorrow + timedelta(days=1),
         )
         self.client.force_login(self.user)
 
@@ -372,19 +386,20 @@ class SpikeAssistantTests(TestCase):
         delay.assert_called_once_with(self.user.pk, [str(first.pk)])
 
     def test_calendar_proposals_can_be_filtered_by_selected_payment_ids(self):
+        tomorrow = timezone.localdate() + timedelta(days=1)
         first = Payment.objects.create(
             user=self.user,
             category=self.category,
             title="Pagamento escolhido",
             amount=Decimal("80.00"),
-            scheduled_date=date(2026, 9, 10),
+            scheduled_date=tomorrow,
         )
         Payment.objects.create(
             user=self.user,
             category=self.category,
             title="Pagamento não escolhido",
             amount=Decimal("90.00"),
-            scheduled_date=date(2026, 9, 11),
+            scheduled_date=tomorrow + timedelta(days=1),
         )
 
         proposals = build_event_proposals(self.user, payment_ids=[str(first.pk)])

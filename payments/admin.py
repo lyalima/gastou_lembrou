@@ -1,6 +1,21 @@
 from django.contrib import admin
 
-from .models import Category, CreditCardStatement, CreditCardStatementItem, Payment, PaymentMethod, PaymentNotification
+from .models import Category, CreditCard, CreditCardStatement, CreditCardStatementItem, Payment, PaymentMethod, PaymentNotification, PaymentRecurrence
+
+
+@admin.register(CreditCard)
+class CreditCardAdmin(admin.ModelAdmin):
+    list_display = ("name", "user", "closing_day", "due_day")
+    search_fields = ("name", "user__email")
+
+
+@admin.register(PaymentRecurrence)
+class PaymentRecurrenceAdmin(admin.ModelAdmin):
+    list_display = ("source", "interval_months", "anchor_date", "active")
+    readonly_fields = ("source", "interval_months", "anchor_date", "next_number")
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Category)
@@ -39,7 +54,7 @@ class PaymentMethodAdmin(admin.ModelAdmin):
 
 @admin.register(CreditCardStatement)
 class CreditCardStatementAdmin(admin.ModelAdmin):
-    list_display = ("user", "status", "parser_source", "created_at")
+    list_display = ("user", "due_date", "status", "parser_source", "created_at")
     search_fields = ("user__email", "error_message")
     list_filter = ("status", "parser_source", "created_at")
 

@@ -33,6 +33,10 @@
             {{ form.payment_method }}
             {{ form.payment_method.errors }}
           </div>
+          <div class="form-field payment-form-full{% if not form.show_installment_field %} is-hidden{% endif %}" data-credit-card-field>
+            <label class="form-label" for="{{ form.credit_card.id_for_label }}">Cartão</label>
+            {{ form.credit_card }}{{ form.credit_card.errors }}
+          </div>
           <div class="form-field payment-form-full installment-field{% if not form.show_installment_field %} is-hidden{% endif %}" data-installment-field>
             <label class="payment-checkbox-label" for="{{ form.is_installment.id_for_label }}">
               {{ form.is_installment }}
@@ -79,7 +83,7 @@
             {{ form.amount.errors }}
           </div>
           <div class="form-field">
-            <label class="form-label" for="{{ form.payment_date.id_for_label }}">Data do pagamento</label>
+            <label class="form-label" for="{{ form.payment_date.id_for_label }}" data-payment-date-label>{% if object.is_credit_card_bill %}Data de vencimento da fatura{% elif form.show_installment_field %}Data da {% if form.show_installment_options %}parcela{% else %}compra{% endif %}{% else %}Data do pagamento{% endif %}</label>
             {{ form.payment_date }}
             {{ form.payment_date.errors }}
           </div>
@@ -91,6 +95,18 @@
         </div>
       </section>
 
+      <section class="payment-form-section" aria-labelledby="payment-recurrence-title">
+        <h3 id="payment-recurrence-title">Recorrência</h3>
+        <div class="form-field">
+          <label class="payment-checkbox-label" for="{{ form.is_recurring.id_for_label }}">{{ form.is_recurring }} <span>Repetir este pagamento</span></label>
+          {{ form.is_recurring.errors }}
+          <div data-recurring-options {% if not form.is_recurring.value %}hidden{% endif %}>
+            <label class="form-label" for="{{ form.recurrence_frequency.id_for_label }}">Frequência</label>
+            {{ form.recurrence_frequency }}{{ form.recurrence_frequency.errors }}
+            <p class="form-help-text">A próxima ocorrência será agendada automaticamente. Desmarcar interrompe novas ocorrências, sem excluir as já criadas.</p>
+          </div>
+        </div>
+      </section>
       <section class="payment-form-section" aria-labelledby="payment-receipt">
         <h3 id="payment-receipt">Comprovante</h3>
         <div class="form-field">

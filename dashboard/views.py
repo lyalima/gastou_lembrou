@@ -11,6 +11,7 @@ from django.views.generic import TemplateView
 from .forms import MonthlySpendingGoalForm
 from .insights import build_insight_dataset, local_insights
 from .metrics import default_report_month, get_available_report_months, get_dashboard_metrics, parse_report_month
+from .metrics import get_spending_summary
 from .models import FinancialInsightSnapshot, MonthlySpendingGoal
 from .reports import build_dashboard_report_pdf
 from .tasks import queue_financial_insights, queue_spending_goal_alert_check
@@ -23,6 +24,22 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         selected_dashboard_month = parse_report_month(self.request.GET.get("month"))
         context.update(get_dashboard_metrics(self.request.user, month=selected_dashboard_month))
+        from payments.models import CreditCard, Payment
+        from payments.installments import add_months
+        from django.db.models import Sum
+        card_month = selected_dashboard_month or _current_month()
+        next_month = add_months(card_month, 1)
+        totals = list(Payment.objects.filter(user=self.request.user, kind=Payment.Kind.EXPENSE, credit_card__user=self.request.user,
+                                            statement_due_date__gte=card_month, statement_due_date__lt=add_months(card_month, 2))
+                      .values("credit_card_id", "statement_due_date").annotate(total=Sum("amount")))
+        context["card_month"] = card_month
+        context["card_next_month"] = next_month
+        context["card_summaries"] = [
+            {"card": card,
+             "current": sum(row["total"] for row in totals if row["credit_card_id"] == card.pk and row["statement_due_date"] < next_month),
+             "next": sum(row["total"] for row in totals if row["credit_card_id"] == card.pk and row["statement_due_date"] >= next_month)}
+            for card in CreditCard.objects.filter(user=self.request.user)
+        ]
         report_months = get_available_report_months(self.request.user)
         default_month = default_report_month(self.request.user)
         selected_month = (
@@ -188,7 +205,7 @@ def _current_month():
 
 
 def _spending_goal_context(user, month):
-    monthly_metrics = get_dashboard_metrics(user, month=month)
+    monthly_metrics = get_spending_summary(user.pk, month)
     spent = monthly_metrics["total"]
     goal = MonthlySpendingGoal.objects.filter(user=user, period_month=month).first()
     goal_amount = goal.amount if goal else 0

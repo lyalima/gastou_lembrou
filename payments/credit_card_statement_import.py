@@ -1,11 +1,12 @@
 import hashlib
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
-import fitz
+import pymupdf
 import requests
 from django.conf import settings
 from django.db.models import Q
@@ -13,13 +14,18 @@ from django.utils import timezone
 
 from core.gemini import generate_content
 
-from .categorization import local_category_match
+from .categorization import category_from_history, local_category_match
 from .classification import normalize_text
 from .models import Category, CreditCardStatement, CreditCardStatementItem, Payment, PaymentMethod
 from .statement_import import parse_amount
 
 
 MIN_EXTRACTED_TEXT_LENGTH = 300
+INSTALLMENT_PATTERN = re.compile(r"\bparcela\s*(\d{1,2})\s*de\s*(\d{1,2})\b", re.IGNORECASE)
+BRAZILIAN_MONTHS = {
+    "jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6,
+    "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12,
+}
 
 
 @dataclass(frozen=True)
@@ -33,6 +39,7 @@ class CardStatementEntry:
 def process_credit_card_statement(statement):
     extracted_text = extract_pdf_text(statement.file.path)
     statement.extracted_text = extracted_text
+    statement.due_date = extract_statement_due_date(extracted_text)
     statement.parser_source = CreditCardStatement.ParserSource.TEXT
 
     if len(normalize_text(extracted_text)) < MIN_EXTRACTED_TEXT_LENGTH:
@@ -41,7 +48,7 @@ def process_credit_card_statement(statement):
             "Não foi possível extrair texto suficiente do PDF. "
             "Esse arquivo parece ser imagem/scaneado ou possui um layout ainda não suportado."
         )
-        statement.save(update_fields=["extracted_text", "parser_source", "status", "error_message", "updated_at"])
+        statement.save(update_fields=["extracted_text", "due_date", "parser_source", "status", "error_message", "updated_at"])
         return []
 
     entries, source = parse_credit_card_entries(extracted_text)
@@ -52,20 +59,23 @@ def process_credit_card_statement(statement):
         statement.error_message = (
             "O texto foi extraído, mas nenhum lançamento de cartão foi identificado com segurança."
         )
-        statement.save(update_fields=["extracted_text", "parser_source", "status", "error_message", "updated_at"])
+        statement.save(update_fields=["extracted_text", "due_date", "parser_source", "status", "error_message", "updated_at"])
         return []
 
     categories = list(Category.objects.filter(Q(user__isnull=True) | Q(user=statement.user)))
     created_items = []
+    entry_occurrences = Counter()
     for entry in entries:
+        base_hash = build_credit_card_import_hash(statement.user_id, entry)
+        entry_occurrences[base_hash] += 1
         item, created = CreditCardStatementItem.objects.get_or_create(
             statement=statement,
-            import_hash=build_credit_card_import_hash(statement.user_id, entry),
+            import_hash=build_credit_card_import_hash(statement.user_id, entry, entry_occurrences[base_hash]),
             defaults={
                 "title": entry.title[:200],
                 "amount": entry.amount,
                 "payment_date": entry.payment_date,
-                "category": local_category_match(entry.title, categories),
+                "category": category_from_history(statement.user_id, entry.title, categories) or local_category_match(entry.title, categories),
                 "raw_data": entry.raw_data,
             },
         )
@@ -74,23 +84,43 @@ def process_credit_card_statement(statement):
 
     statement.status = CreditCardStatement.Status.READY
     statement.error_message = ""
-    statement.save(update_fields=["extracted_text", "parser_source", "status", "error_message", "updated_at"])
+    statement.save(update_fields=["extracted_text", "due_date", "parser_source", "status", "error_message", "updated_at"])
     return created_items or list(statement.items.all())
 
 
 def extract_pdf_text(path):
-    document = fitz.open(path)
+    document = pymupdf.open(path)
     try:
         return "\n".join(page.get_text("text") for page in document)
     finally:
         document.close()
 
 
+def extract_statement_due_date(text):
+    match = re.search(
+        r"\bdata\s+de\s+vencimento\b[^\d]{0,120}(\d{1,2}/\d{1,2}/\d{4})\b",
+        text,
+        re.IGNORECASE,
+    )
+    return parse_card_date(match.group(1)) if match else None
+
+
+def extract_installment_info(title):
+    match = INSTALLMENT_PATTERN.search(title or "")
+    if not match:
+        return None
+    number, total = map(int, match.groups())
+    return (number, total) if 1 <= number <= total else None
+
+
 def parse_credit_card_entries(text):
+    brazilian_entries = parse_brazilian_card_entries(text)
     if settings.GEMINI_API_KEY:
         try:
             entries = parse_entries_with_gemini(text)
             if entries:
+                if brazilian_entries and len(brazilian_entries) >= len(entries):
+                    return brazilian_entries, CreditCardStatement.ParserSource.REGEX
                 return entries, CreditCardStatement.ParserSource.GEMINI
         except (requests.RequestException, ValueError, KeyError, TypeError, json.JSONDecodeError):
             pass
@@ -108,7 +138,7 @@ def parse_entries_with_gemini(text):
                     "type": "object",
                     "properties": {
                         "date": {"type": "string", "description": "Data no formato YYYY-MM-DD."},
-                        "title": {"type": "string", "description": "Descrição do estabelecimento ou lançamento."},
+                        "title": {"type": "string", "description": "Descrição do lançamento, incluindo o texto Parcela X de Y quando existir."},
                         "amount": {"type": "number", "description": "Valor positivo da compra em reais."},
                     },
                     "required": ["date", "title", "amount"],
@@ -125,7 +155,8 @@ def parse_entries_with_gemini(text):
                         "text": (
                             "Extraia somente compras, assinaturas, tarifas ou lançamentos de uma fatura de cartão de crédito. "
                             "Não inclua pagamento da fatura, saldo anterior, total da fatura, limite, juros futuros, dados cadastrais "
-                            "ou linhas de cabeçalho. Retorne datas no formato YYYY-MM-DD e valores positivos em reais."
+                            "ou linhas de cabeçalho. Preserve a indicação Parcela X de Y no título quando houver. "
+                            "Retorne datas no formato YYYY-MM-DD e valores positivos em reais."
                         )
                     }
                 ]
@@ -151,7 +182,7 @@ def parse_entries_with_gemini(text):
 
 
 def parse_entries_locally(text):
-    entries = []
+    entries = parse_brazilian_card_entries(text)
     current_year = timezone.localdate().year
     line_pattern = re.compile(
         r"(?P<date>\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b)\s+"
@@ -176,6 +207,61 @@ def parse_entries_locally(text):
                     raw_data={"line": normalized_line},
                 )
             )
+    return entries
+
+
+def parse_brazilian_card_entries(text):
+    entries = []
+    date_pattern = (
+        r"(?P<day>\d{1,2})\s+de\s+"
+        r"(?P<month>jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\.?\s+"
+        r"(?P<year>\d{4})"
+    )
+    amount_pattern = r"(?P<amount>\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})"
+    line_pattern = re.compile(
+        rf"^{date_pattern}\s+(?P<title>.+?)\s+-\s+(?P<credit>\+\s*)?R\$\s*{amount_pattern}$",
+        re.IGNORECASE,
+    )
+    date_line_pattern = re.compile(rf"^{date_pattern}$", re.IGNORECASE)
+    amount_line_pattern = re.compile(rf"^R\$\s*{amount_pattern}$")
+    lines = [" ".join(line.split()) for line in text.splitlines()]
+
+    for index, normalized_line in enumerate(lines):
+        match = line_pattern.match(normalized_line)
+        if match:
+            if match.group("credit"):
+                continue
+            title = match.group("title")
+            amount_text = match.group("amount")
+            date_match = match
+            raw_line = normalized_line
+        else:
+            date_match = date_line_pattern.match(normalized_line)
+            if not date_match or index + 3 >= len(lines) or lines[index + 2] != "-":
+                continue
+            amount_match = amount_line_pattern.match(lines[index + 3])
+            if not amount_match:
+                continue
+            title = lines[index + 1]
+            amount_text = amount_match.group("amount")
+            raw_line = " ".join(lines[index:index + 4])
+        try:
+            parsed_date = date(
+                int(date_match.group("year")),
+                BRAZILIAN_MONTHS[date_match.group("month").lower()],
+                int(date_match.group("day")),
+            )
+        except ValueError:
+            continue
+        amount = parse_amount(amount_text)
+        title = clean_entry_title(title)
+        if amount and amount > 0 and title and is_probable_purchase(title):
+            entries.append(CardStatementEntry(
+                title=title,
+                amount=amount,
+                payment_date=parsed_date,
+                raw_data={"line": raw_line},
+            ))
     return entries
 
 
@@ -222,8 +308,10 @@ def is_probable_purchase(title):
     return bool(normalized) and not any(term in normalized for term in blocked_terms)
 
 
-def build_credit_card_import_hash(user_id, entry):
+def build_credit_card_import_hash(user_id, entry, occurrence=1):
     base = f"credit-card-statement|{user_id}|{entry.payment_date.isoformat()}|{entry.amount}|{normalize_text(entry.title)}"
+    if occurrence > 1:
+        base += f"|occurrence:{occurrence}"
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 
@@ -234,14 +322,15 @@ def get_or_create_credit_card_method():
     return PaymentMethod.objects.create(name="Cartão de crédito")
 
 
-def payment_duplicate_exists(user, title, amount, payment_date, payment_method, import_hash):
-    return Payment.objects.filter(user=user).filter(
-        Q(import_hash=import_hash)
-        | Q(
-            title__iexact=title,
-            amount=amount,
-            payment_date=payment_date,
-            payment_method=payment_method,
-            kind=Payment.Kind.EXPENSE,
-        )
-    ).exists()
+def payment_duplicate_exists(user, title, amount, payment_date, payment_method, import_hash, statement_id, prior_occurrences):
+    if Payment.objects.filter(user=user, import_hash=import_hash).exists():
+        return True
+    existing_count = Payment.objects.filter(
+        user=user,
+        title__iexact=title,
+        amount=amount,
+        payment_date=payment_date,
+        payment_method=payment_method,
+        kind=Payment.Kind.EXPENSE,
+    ).exclude(credit_card_statement_id=statement_id).count()
+    return existing_count > prior_occurrences

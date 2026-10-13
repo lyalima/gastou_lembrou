@@ -4,16 +4,17 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Count, Q, Sum
-from django.db.models.functions import Coalesce, TruncMonth
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
 from dashboard.models import MonthlySpendingGoal
+from dashboard.metrics import spending_date_expression
 from payments.models import Category, Payment
 
 from .rag import format_knowledge_context, retrieve_knowledge
 
 
-def build_spike_tools(user):
+def build_spike_tools(user, allow_actions=False, conversation=None):
     from langchain.tools import tool
 
     @tool
@@ -34,7 +35,7 @@ def build_spike_tools(user):
         ordenacao: str = "recentes",
         limite: int = 20,
     ) -> str:
-        """Busca gastos do usuário autenticado. Datas usam AAAA-MM-DD. Categoria exige nome completo do catálogo (acentos opcionais). Situação: todos, agendados, vencidos ou futuros. Parcelado: todos, sim ou nao. Ordenação: recentes ou antigos por data do gasto; cadastrados_recentemente por cadastro; maior_valor ou menor_valor. Para último gasto, use limite=1 e limite a data final a hoje."""
+        """Busca gastos do usuário autenticado. Datas AAAA-MM-DD seguem o dashboard: data da compra no crédito, data prevista nos demais agendados e data de pagamento nos outros. Vencimento da fatura é informação separada, não filtro mensal. Categoria exige nome completo do catálogo (acentos opcionais). Situação: todos, agendados, vencidos ou futuros. Parcelado: todos, sim ou nao. Ordenação: recentes ou antigos por data do gasto; cadastrados_recentemente por cadastro; maior_valor ou menor_valor."""
         queryset = _filtered_payments(
             user,
             data_inicial=data_inicial,
@@ -57,9 +58,12 @@ def build_spike_tools(user):
         for payment in queryset.order_by(*ordering)[:safe_limit]:
             records.append(
                 {
+                    "id": str(payment.pk),
                     "titulo": payment.title,
                     "valor": str(payment.amount),
                     "data_pagamento": payment.payment_date.isoformat() if payment.payment_date else None,
+                    "vencimento_fatura": payment.statement_due_date.isoformat() if payment.statement_due_date else None,
+                    "data_financeira": payment.data_consulta.isoformat() if payment.data_consulta else None,
                     "data_agendamento": payment.scheduled_date.isoformat() if payment.scheduled_date else None,
                     "categoria": payment.category.name if payment.category_id else "Sem categoria",
                     "forma_pagamento": payment.payment_method.name if payment.payment_method_id else "Sem forma",
@@ -82,7 +86,7 @@ def build_spike_tools(user):
         situacao: str = "todos",
         parcelado: str = "todos",
     ) -> str:
-        """Resume gastos do usuário com filtros opcionais e informa total, quantidade, categorias e formas de pagamento. Datas usam AAAA-MM-DD."""
+        """Resume gastos usando as datas do dashboard: compra no crédito, prevista nos demais agendados ou pagamento. Datas AAAA-MM-DD. Informa total, quantidade, categorias e formas de pagamento."""
         queryset = _filtered_payments(
             user,
             data_inicial=data_inicial,
@@ -126,7 +130,7 @@ def build_spike_tools(user):
         categoria: str = "",
         forma_pagamento: str = "",
     ) -> str:
-        """Agrupa os gastos do usuário por mês para comparações e análise de evolução, com filtros opcionais. Datas usam AAAA-MM-DD."""
+        """Agrupa gastos pelo mês da compra no crédito, data prevista nos demais agendados ou pagamento, como o dashboard. Datas AAAA-MM-DD."""
         queryset = _filtered_payments(
             user,
             data_inicial=data_inicial,
@@ -135,7 +139,7 @@ def build_spike_tools(user):
             forma_pagamento=forma_pagamento,
         )
         periods = (
-            queryset.annotate(data_metrica=Coalesce("payment_date", "scheduled_date"))
+            queryset.annotate(data_metrica=spending_date_expression())
             .annotate(mes=TruncMonth("data_metrica"))
             .values("mes")
             .annotate(total=Sum("amount"), quantidade=Count("id"))
@@ -224,7 +228,7 @@ def build_spike_tools(user):
         """Recupera documentação confiável sobre recursos, uso, privacidade, termos, segurança e solução de problemas do Gastou Lembrou."""
         return format_knowledge_context(retrieve_knowledge(pergunta))
 
-    return [
+    tools = [
         consultar_categorias,
         buscar_pagamentos,
         resumir_gastos,
@@ -233,6 +237,89 @@ def build_spike_tools(user):
         consultar_meta,
         consultar_ajuda_do_sistema,
     ]
+    if allow_actions and conversation:
+        @tool
+        def consultar_opcoes_de_cadastro() -> str:
+            """Lista IDs e nomes de categorias, formas de pagamento e cartões disponíveis para preparar um cadastro/edição. Nunca invente IDs."""
+            from payments.models import CreditCard, PaymentMethod
+            return _json({"categorias": list(_available_categories(user).values("id", "name")),
+                          "formas": list(PaymentMethod.objects.values("id", "name")),
+                          "cartoes": list(CreditCard.objects.filter(user=user).values("id", "name"))})
+
+        @tool
+        def preparar_gasto(
+            title: str, amount: str,
+            description: str = "", payment_date: str = "", scheduled_date: str = "",
+            category: str = "", payment_method: str = "", credit_card: str = "",
+            is_installment: bool = False, installment_total: int = 0, installment_number: int = 0,
+            is_recurring: bool = False, recurrence_frequency: int = 0,
+        ) -> str:
+            """Abre revisão de um NOVO gasto pedido pelo usuário, sem salvar. Exige título, valor e data. amount é o valor do gasto/parcela em reais com ponto decimal. payment_date: data da compra no crédito ou data do pagamento nos demais; scheduled_date: data prevista, somente se agendado. Datas AAAA-MM-DD. category, payment_method e credit_card aceitam nomes exatos informados pelo usuário ou IDs reais do catálogo; nunca invente IDs. Nomes são resolvidos pelo servidor, sem diferenciar maiúsculas ou acentos. Não invente cartão, forma ou data ausentes; pergunte se ambíguo. Parcelamento exige total e número atual, gera as demais parcelas somente após confirmação; esclareça se o valor informado é total ou por parcela. Recorrência: 1, 3, 6 ou 12 meses, apenas se solicitada. A gravação exige clique do usuário em Confirmar criação, nunca uma resposta no chat."""
+            from django.core.exceptions import ValidationError
+            from .actions import propose_payment
+            campos = {key: value for key, value in {
+                "title": title, "amount": amount, "description": description, "payment_date": payment_date,
+                "scheduled_date": scheduled_date, "category": category, "payment_method": payment_method, "credit_card": credit_card,
+            }.items() if value != ""}
+            if is_installment:
+                campos.update(is_installment=True, installment_total=installment_total, installment_number=installment_number)
+            if is_recurring:
+                campos.update(is_recurring=True, recurrence_frequency=recurrence_frequency)
+            try:
+                from payments.models import CreditCard, PaymentMethod
+                for field, options, label in (
+                    ("category", _available_categories(user), "categoria"),
+                    ("payment_method", PaymentMethod.objects.all(), "forma de pagamento"),
+                    ("credit_card", CreditCard.objects.filter(user=user), "cartão"),
+                ):
+                    if field in campos:
+                        campos[field] = _resolve_registration_option(options, campos[field], label)
+                action = propose_payment(user, conversation, "create", campos)
+                return _json({"proposta": str(action.pk), "status": "aguardando confirmação no botão; nenhum pagamento foi salvo", "mensagem_usuario": "A revisão do gasto está pronta. Confira os dados na janela e escolha Confirmar criação ou Cancelar. Nenhum pagamento foi salvo ainda."})
+            except ValidationError as exc:
+                result = {"erro": "; ".join(exc.messages)}
+                if getattr(exc, "code", None) == "registration_option":
+                    result["mensagem_usuario"] = result["erro"]
+                return _json(result)
+        tools.extend([consultar_opcoes_de_cadastro, preparar_gasto])
+    return tools
+
+
+def _resolve_registration_option(queryset, value, label):
+    from django.core.exceptions import ValidationError
+
+    value = str(value).strip()
+    options = list(queryset.order_by("name", "pk"))
+    # Resolve only within the authorized catalog, never by an unrestricted PK lookup.
+    by_id = next((item for item in options if str(item.pk) == value), None)
+    if by_id:
+        return str(by_id.pk)
+    matches = [item for item in options if _normalized_name(item.name) == _normalized_name(value)]
+    if not matches:
+        wanted = _registration_name(value, label)
+        matches = [item for item in options if wanted and _registration_name(item.name, label) == wanted]
+    if len(matches) == 1:
+        return str(matches[0].pk)
+    if len(matches) > 1:
+        names = ", ".join(item.name for item in matches[:20])
+        raise ValidationError(f"Encontrei mais de uma opção de {label}: {names}. Qual delas você deseja usar?", code="registration_option")
+    if options:
+        names = ", ".join(item.name for item in options[:20])
+        raise ValidationError(f"Não encontrei essa opção de {label}. As opções disponíveis incluem: {names}. Qual você deseja usar?", code="registration_option")
+    raise ValidationError(f"Não há opções de {label} disponíveis para sua conta. Cadastre uma opção no sistema antes de usá-la neste gasto.", code="registration_option")
+
+
+def _registration_name(value, label):
+    name = " ".join(_normalized_name(value).split())
+    prefixes = {
+        "cartão": ("cartao de credito ", "cartao "),
+        "categoria": ("categoria ",),
+        "forma de pagamento": ("forma de pagamento ", "pagamento via "),
+    }
+    for prefix in prefixes.get(label, ()):
+        if name.startswith(prefix):
+            return name[len(prefix):].strip()
+    return name
 
 
 def _filtered_payments(
@@ -246,16 +333,16 @@ def _filtered_payments(
     parcelado="todos",
 ):
     queryset = Payment.objects.filter(user=user, kind=Payment.Kind.EXPENSE).annotate(
-        data_consulta=Coalesce("payment_date", "scheduled_date")
+        data_consulta=spending_date_expression()
     )
     start = _parse_date(data_inicial)
     end = _parse_date(data_final)
     if start and end and start > end:
         raise ValueError("A data inicial deve ser anterior ou igual à data final.")
     if start:
-        queryset = queryset.filter(Q(payment_date__gte=start) | Q(payment_date__isnull=True, scheduled_date__gte=start))
+        queryset = queryset.filter(data_consulta__gte=start)
     if end:
-        queryset = queryset.filter(Q(payment_date__lte=end) | Q(payment_date__isnull=True, scheduled_date__lte=end))
+        queryset = queryset.filter(data_consulta__lte=end)
     if categoria:
         wanted = _normalized_name(categoria)
         matches = [item.pk for item in _available_categories(user) if _normalized_name(item.name) == wanted]
@@ -272,7 +359,7 @@ def _filtered_payments(
     elif normalized_status == "vencidos":
         queryset = queryset.filter(scheduled_date__lt=today)
     elif normalized_status == "futuros":
-        queryset = queryset.filter(Q(scheduled_date__gte=today) | Q(is_installment=True, payment_date__gt=today))
+        queryset = queryset.filter(Q(scheduled_date__gte=today) | Q(is_installment=True, data_consulta__gt=today))
 
     normalized_installment = str(parcelado or "todos").strip().lower()
     if normalized_installment == "sim":

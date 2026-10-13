@@ -8,24 +8,29 @@
       <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </header>
-  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal">
+  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal" hx-swap="innerHTML" data-statement-analysis-form>
     {% csrf_token %}
     <div class="payment-modal-body">
       {% if form.non_field_errors %}<div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% if import_error %}<div class="payment-form-alert" role="alert">{{ import_error }}</div>{% endif %}
       <section class="payment-form-section" aria-labelledby="statement-import-data">
         <h3 id="statement-import-data">Arquivo do extrato</h3>
         <p class="payment-form-help">
-          Envie um arquivo CSV ou OFX exportado pelo banco. O sistema cria pagamentos apenas para despesas, ignora entradas e evita duplicar transações já importadas.
+          Envie um CSV, OFX ou PDF exportado pelo banco. O sistema cria pagamentos para despesas identificadas, ignora entradas e evita duplicatas.
         </p>
         <div class="payment-form-grid">
           <div class="form-field payment-form-full">
             <label class="form-label" for="{{ form.statement_file.id_for_label }}">Extrato bancário</label>
             {{ form.statement_file }}
             {{ form.statement_file.errors }}
-            <small class="form-help-text">Formatos aceitos: CSV ou OFX.</small>
+            <small class="form-help-text">Formatos aceitos: CSV, OFX ou PDF com texto selecionável.</small>
           </div>
         </div>
       </section>
+      <p class="statement-analysis-status" role="status" aria-live="polite" hidden>
+        <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+        Analisando extrato... Isso pode levar alguns segundos.
+      </p>
     </div>
     <footer class="payment-modal-footer">
       <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>

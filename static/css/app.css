@@ -1786,11 +1786,47 @@ html[data-theme="dark"] .payments-page .filter-submit {
   width: min(100%, 62rem);
 }
 
+.statement-analysis-status:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  color: var(--workspace-text-soft);
+  font-size: 0.875rem;
+}
+
+.statement-analysis-status[hidden] {
+  display: none;
+}
+
+.statement-analysis-status i {
+  color: var(--workspace-brand-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statement-analysis-status .fa-spin {
+    animation: none;
+  }
+}
+
 .credit-card-statement-list {
   display: grid;
   gap: 0.85rem;
   margin-top: 1rem;
 }
+
+.statement-preview-entry {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+  color: var(--workspace-text);
+}
+
+.statement-preview-entry strong { overflow-wrap: anywhere; }
+.statement-preview-entry span { color: var(--workspace-text-soft); font-variant-numeric: tabular-nums; }
 
 .credit-card-statement-item {
   display: grid;
@@ -8249,6 +8285,365 @@ body.ds-aura-v3 .spike-composer textarea {
 
   body.ds-aura-v3 .spike-panel {
     border-radius: 0.5rem 0.5rem 0 0;
+  }
+}
+
+.card-accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+}
+.card-purchases-panel {
+  margin-top: 1.25rem;
+}
+.card-purchases-panel .workspace-data-row > div span {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.credit-account, .spike-payment-action {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  overflow-wrap: anywhere;
+}
+.credit-account h2, .credit-account h3, .spike-payment-action h3 { font-size: 18px; margin-bottom: 12px; }
+.credit-account dl, .spike-payment-action dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px; margin-block: 12px; }
+.credit-account dt, .spike-payment-action dt { color: var(--ds-text-soft); }
+.credit-account dd, .spike-payment-action dd { margin: 0; font-weight: 600; }
+.spike-action-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.spike-payment-action { margin-top: 12px; }
+.spike-review-dialog {
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.spike-review-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+.spike-review-dialog .spike-payment-action {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 2rem);
+  margin: 0;
+  border: 0;
+}
+.spike-review-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.spike-review-dialog h3, .spike-review-dialog .spike-action-buttons { flex-shrink: 0; }
+.spike-review-dialog .spike-action-buttons { justify-content: flex-end; }
+.spike-review-dialog dd { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.spike-review-dialog button { min-height: 44px; }
+.spike-review-dialog [role="alert"] { color: var(--color-danger, #dc2626); margin-top: 12px; }
+@media (max-width: 480px) {
+  .spike-review-dialog .spike-payment-action dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .spike-review-dialog dd { margin-bottom: 10px; }
+  .spike-review-dialog .spike-action-buttons > button { flex: 1; }
+}
+
+/* Credit card form */
+.credit-card-modal {
+  width: min(34rem, calc(100vw - 2rem));
+}
+
+.credit-card-modal-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.credit-card-modal-icon {
+  display: inline-grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-surface-muted);
+  color: var(--ds-text);
+  font-size: 1rem;
+}
+
+.credit-card-modal-body {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.credit-card-form-section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.credit-card-form-section + .credit-card-form-section {
+  border-top: 1px solid var(--ds-border);
+  padding-top: 1.2rem;
+}
+
+.credit-card-form-section > h3 {
+  margin: 0;
+  color: var(--ds-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.credit-card-modal :is(input, textarea) {
+  width: 100%;
+}
+
+.credit-card-modal .form-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.credit-card-modal textarea {
+  min-height: 4.75rem;
+  max-height: 7.5rem;
+  resize: vertical;
+}
+
+.form-label-optional {
+  color: var(--ds-text-faint);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.credit-card-cycle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.credit-card-day-field {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-surface-muted);
+  padding: 0.75rem;
+}
+
+.credit-card-day-icon {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--ds-surface);
+  color: var(--ds-info);
+}
+
+.credit-card-day-field .form-label {
+  margin-bottom: 0.35rem;
+}
+
+.credit-card-day-field input {
+  min-height: 2.45rem;
+  padding-block: 0.45rem;
+}
+
+.credit-card-day-field .errorlist {
+  grid-column: 1 / -1;
+}
+
+/* Dashboard card statement summary */
+.dashboard-cards-panel {
+  margin-top: 1rem;
+}
+
+.dashboard-cards-heading {
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dashboard-cards-heading .btn-secondary {
+  min-height: 2.35rem;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+}
+
+.dashboard-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-card-account {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-surface-muted);
+}
+
+.dashboard-card-account > header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid var(--ds-border);
+  padding: 0.75rem 0.85rem;
+}
+
+.dashboard-card-account h3 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: var(--ds-text);
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-card-icon {
+  display: inline-grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+  font-size: 0.72rem;
+}
+
+.dashboard-card-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-card-value {
+  min-width: 0;
+  padding: 0.8rem 0.85rem;
+}
+
+.dashboard-card-value + .dashboard-card-value {
+  border-left: 1px solid var(--ds-border);
+}
+
+.dashboard-card-value span,
+.dashboard-card-value strong {
+  display: block;
+}
+
+.dashboard-card-value span {
+  overflow: hidden;
+  color: var(--ds-text-faint);
+  font-size: 0.66rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-card-value strong {
+  margin-top: 0.3rem;
+  color: var(--ds-text);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-card-value-current {
+  background: var(--ds-surface);
+}
+
+.dashboard-card-amount,
+.invoice-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dashboard-card-amount .icon-action-btn {
+  display: inline-grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-top: 0.15rem;
+}
+
+.invoice-filter-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.invoice-filter-form .form-field { min-width: 0; }
+.invoice-filter-form .form-input { width: 100%; }
+.invoice-filter-form .btn-primary { min-height: 2.75rem; }
+.invoice-results { margin-top: 1rem; }
+.invoice-results-heading { align-items: center; }
+.invoice-results-heading p,
+.invoice-empty { margin: 0.35rem 0 0; color: var(--ds-text-soft); }
+.invoice-total { color: var(--ds-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.invoice-row-actions { flex: 0 0 auto; }
+.invoice-row-actions .icon-action-btn { display: inline-grid; width: 2rem; height: 2rem; place-items: center; }
+
+@media (max-width: 700px) {
+  .invoice-filter-form { grid-template-columns: minmax(0, 1fr); }
+  .invoice-filter-form .btn-primary { width: 100%; }
+  .invoice-results-heading,
+  .invoice-row { align-items: stretch; flex-direction: column; }
+  .invoice-row-actions { align-self: stretch; }
+}
+
+.dashboard-cards-empty {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px dashed var(--ds-border-strong);
+  border-radius: 8px;
+  padding: 0.8rem;
+  color: var(--ds-text-soft);
+  font-size: 0.78rem;
+}
+
+.dashboard-cards-empty p {
+  margin: 0;
+}
+
+.dashboard-cards-empty a {
+  margin-left: auto;
+  color: var(--ds-text);
+  font-weight: 750;
+}
+
+@media (max-width: 479px) {
+  .credit-card-cycle-grid,
+  .dashboard-card-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-card-value + .dashboard-card-value {
+    border-top: 1px solid var(--ds-border);
+    border-left: 0;
+  }
+
+  .dashboard-cards-heading {
+    align-items: flex-start;
+  }
+
+  .dashboard-cards-heading .btn-secondary {
+    width: auto;
   }
 }
 

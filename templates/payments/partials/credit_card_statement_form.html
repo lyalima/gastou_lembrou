@@ -8,7 +8,7 @@
       <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </header>
-  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal" hx-swap="innerHTML">
+  <form class="payment-modal-form" method="post" enctype="multipart/form-data" hx-post="{{ request.path }}" hx-target="#modal" hx-swap="innerHTML" data-statement-analysis-form>
     {% csrf_token %}
     <div class="payment-modal-body">
       {% if form.non_field_errors %}<div class="payment-form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
@@ -18,14 +18,19 @@
           O sistema tentará ler o texto da fatura e mostrar uma prévia dos lançamentos antes de criar os pagamentos.
         </p>
         <div class="payment-form-grid">
+          <div class="form-field payment-form-full"><label class="form-label" for="{{ form.credit_card.id_for_label }}">Cartão</label>{{ form.credit_card }}{{ form.credit_card.errors }}</div>
           <div class="form-field payment-form-full">
             <label class="form-label" for="{{ form.statement_file.id_for_label }}">Fatura do cartão</label>
             {{ form.statement_file }}
             {{ form.statement_file.errors }}
-            <small class="form-help-text">Formato aceito: PDF com texto extraível.</small>
+            <small class="form-help-text">Formato aceito: PDF</small>
           </div>
         </div>
       </section>
+      <p class="statement-analysis-status" role="status" aria-live="polite" hidden>
+        <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+        Analisando fatura... Isso pode levar alguns segundos.
+      </p>
     </div>
     <footer class="payment-modal-footer">
       <button class="btn-secondary" type="button" data-close-modal>Cancelar</button>

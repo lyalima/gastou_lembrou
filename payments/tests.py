@@ -15,7 +15,7 @@ from accounts.models import LegalAcceptance
 
 from .forms import PaymentForm
 from .image_processing import _scan_document, process_receipt_file
-from .models import Category, Payment, PaymentMethod, PaymentNotification
+from .models import Category, CreditCardStatement, Payment, PaymentMethod, PaymentNotification
 from .tasks import send_payment_confirmation, send_payment_reminders
 
 
@@ -37,6 +37,14 @@ class PaymentTests(TestCase):
                 source=LegalAcceptance.Source.EMAIL,
             )
 
+    def confirm_bank_import(self, upload):
+        preview = self.client.post(reverse("payments:statement_import"), {"statement_file": upload})
+        self.assertEqual(preview.status_code, 200)
+        return self.client.post(
+            reverse("payments:statement_confirm"),
+            {"token": preview.context["token"], "items": [str(row["id"]) for row in preview.context["rows"]]},
+        )
+
     def test_payment_list_is_scoped_to_authenticated_user(self):
         Payment.objects.create(user=self.user, category=self.category, title="Arroz", amount=Decimal("20.00"), payment_date=date(2026, 5, 1))
         Payment.objects.create(user=self.other, category=self.other_category, title="Privado", amount=Decimal("99.00"), payment_date=date(2026, 5, 2))
@@ -46,6 +54,31 @@ class PaymentTests(TestCase):
 
         self.assertContains(response, "Arroz")
         self.assertNotContains(response, "Privado")
+
+    def test_imported_credit_card_bill_shows_only_invoice_due_date(self):
+        statement = CreditCardStatement.objects.create(
+            user=self.user, file="test-only.pdf", due_date=date(2026, 9, 25)
+        )
+        bill = Payment.objects.create(
+            user=self.user,
+            category=self.category,
+            title="Fatura Banco X",
+            kind=Payment.Kind.CREDIT_CARD_BILL,
+            amount=Decimal("123.45"),
+            payment_date=date(2026, 9, 25),
+            credit_card_statement=statement,
+        )
+        self.client.force_login(self.user)
+
+        for url in (reverse("payments:list"), reverse("payments:detail", args=[bill.pk])):
+            response = self.client.get(url)
+            self.assertNotContains(response, "Data da compra")
+            self.assertContains(response, "Vencimento da fatura", count=1)
+            self.assertContains(response, "25/09/2026")
+
+        edit_response = self.client.get(reverse("payments:update", args=[bill.pk]))
+        self.assertContains(edit_response, "Data de vencimento da fatura")
+        self.assertNotContains(edit_response, "Data da compra")
 
     def test_filters_by_title_category_month_year_and_order(self):
         Payment.objects.create(user=self.user, category=self.category, title="Aluguel", amount=Decimal("900.00"), payment_date=date(2026, 4, 1))
@@ -273,7 +306,7 @@ class PaymentTests(TestCase):
         )
         self.client.force_login(self.user)
 
-        response = self.client.post(reverse("payments:statement_import"), {"statement_file": upload})
+        response = self.confirm_bank_import(upload)
 
         self.assertEqual(response.status_code, 302)
         payment = Payment.objects.get(user=self.user, title="Mercado Central")
@@ -286,7 +319,7 @@ class PaymentTests(TestCase):
         content = "Data;Descrição;Valor\n10/07/2026;Mercado Central;-123,45\n".encode("utf-8")
         self.client.force_login(self.user)
 
-        self.client.post(reverse("payments:statement_import"), {"statement_file": SimpleUploadedFile("extrato.csv", content, content_type="text/csv")})
+        self.confirm_bank_import(SimpleUploadedFile("extrato.csv", content, content_type="text/csv"))
         self.client.post(reverse("payments:statement_import"), {"statement_file": SimpleUploadedFile("extrato.csv", content, content_type="text/csv")})
 
         self.assertEqual(Payment.objects.filter(user=self.user, title="Mercado Central").count(), 1)
@@ -299,10 +332,7 @@ class PaymentTests(TestCase):
         """
         self.client.force_login(self.user)
 
-        response = self.client.post(
-            reverse("payments:statement_import"),
-            {"statement_file": SimpleUploadedFile("extrato.ofx", ofx, content_type="application/x-ofx")},
-        )
+        response = self.confirm_bank_import(SimpleUploadedFile("extrato.ofx", ofx, content_type="application/x-ofx"))
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Payment.objects.filter(user=self.user, title="Padaria", amount=Decimal("45.90")).exists())
@@ -465,13 +495,13 @@ def _jpeg_bytes():
 
 
 def _sample_pdf_bytes():
-    import fitz
+    import pymupdf
 
-    document = fitz.open()
+    document = pymupdf.open()
     for index in range(2):
         page = document.new_page(width=420, height=595)
         page.insert_text((45, 80), f"Conta de agua - pagina {index + 1}", fontsize=18)
-        page.draw_rect(fitz.Rect(35, 45, 385, 540), color=(0, 0, 0), width=1)
+        page.draw_rect(pymupdf.Rect(35, 45, 385, 540), color=(0, 0, 0), width=1)
     data = document.tobytes()
     document.close()
     return data

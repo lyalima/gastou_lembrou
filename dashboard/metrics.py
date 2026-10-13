@@ -1,6 +1,6 @@
 from datetime import date
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Case, Count, F, Q, Sum, When
 from django.db.models.functions import Coalesce, TruncDay, TruncMonth
 from django.utils import timezone
 
@@ -8,7 +8,7 @@ from payments.models import Payment
 
 
 def get_dashboard_metrics(user, month=None):
-    payments = accountable_payments(Payment.objects.filter(user=user)).select_related("category", "payment_method")
+    payments = accountable_payments(Payment.objects.filter(user=user)).select_related("category", "payment_method", "credit_card")
     if month:
         payments = filter_payments_by_report_month(payments, month)
 
@@ -18,10 +18,10 @@ def get_dashboard_metrics(user, month=None):
         .order_by("category__name")
     )
     evolution_trunc = TruncDay("metric_date") if month else TruncMonth("metric_date")
-    evolution_date_format = "%d/%m" if month else "%m/%Y"
+    evolution_date_format = "%d/%m/%Y" if month else "%m/%Y"
     by_period = (
-        payments.exclude(payment_date__isnull=True, scheduled_date__isnull=True)
-        .annotate(metric_date=Coalesce("payment_date", "scheduled_date"))
+        payments.annotate(metric_date=activity_date_expression())
+        .exclude(metric_date__isnull=True)
         .annotate(period=evolution_trunc)
         .values("period")
         .annotate(total=Sum("amount"), count=Count("id"))
@@ -30,7 +30,7 @@ def get_dashboard_metrics(user, month=None):
     by_payment_method = (
         payments.values("payment_method__name")
         .annotate(total=Sum("amount"), count=Count("id"))
-        .order_by("payment_method__name")
+        .order_by(F("payment_method__name").asc(nulls_first=True))
     )
 
     category_metrics = [
@@ -74,15 +74,15 @@ def get_dashboard_metrics(user, month=None):
         "payment_method_labels": [item["name"] for item in payment_method_metrics],
         "payment_method_totals": [float(item["total"]) for item in payment_method_metrics],
         "recent_payments": payments.order_by("-created_at")[:5],
-        "report_payments": payments.order_by("-payment_date", "-created_at"),
+        "report_payments": payments.annotate(metric_date=activity_date_expression()).order_by("metric_date", "created_at", "pk"),
     }
 
 
 def get_available_report_months(user):
     months = (
         accountable_payments(Payment.objects.filter(user=user))
-        .exclude(payment_date__isnull=True, scheduled_date__isnull=True)
-        .annotate(metric_date=Coalesce("payment_date", "scheduled_date"))
+        .annotate(metric_date=spending_date_expression())
+        .exclude(metric_date__isnull=True)
         .annotate(month=TruncMonth("metric_date"))
         .values_list("month", flat=True)
         .distinct()
@@ -110,9 +110,40 @@ def default_report_month(user):
 
 
 def filter_payments_by_report_month(queryset, month):
-    return queryset.filter(
-        Q(payment_date__year=month.year, payment_date__month=month.month)
-        | Q(payment_date__isnull=True, scheduled_date__year=month.year, scheduled_date__month=month.month)
+    return queryset.annotate(metric_date=spending_date_expression()).filter(
+        metric_date__year=month.year, metric_date__month=month.month
+    )
+
+
+def activity_date_expression():
+    # payment_date stores the purchase date for credit-card expenses.
+    return spending_date_expression()
+
+
+def spending_date_expression():
+    credit = Q(statement_due_date__isnull=False)
+    for name in ("Cartão de crédito", "Cartao de credito", "Cartão crédito", "Credito", "Crédito"):
+        credit |= Q(payment_method__name__iexact=name)
+    return Case(
+        When(credit, then=Coalesce("payment_date", "scheduled_date")),
+        default=Coalesce("scheduled_date", "payment_date"),
+    )
+
+
+def spending_payments(user_id, month=None):
+    payments = accountable_payments(Payment.objects.filter(user_id=user_id))
+    if month:
+        payments = payments.annotate(spending_date=spending_date_expression()).filter(
+            spending_date__year=month.year, spending_date__month=month.month,
+        )
+    return payments
+
+
+def get_spending_summary(user_id, month=None):
+    return spending_payments(user_id, month).aggregate(
+        total=Coalesce(Sum("amount"), 0, output_field=Payment._meta.get_field("amount")),
+        payment_count=Count("pk"),
+        scheduled_count=Count("pk", filter=Q(scheduled_date__isnull=False)),
     )
 
 

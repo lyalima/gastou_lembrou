@@ -36,6 +36,7 @@
         <div class="spike-message spike-message-assistant">{{ greeting }}</div>
       </div>
     {% endif %}
+    <div data-spike-payment-actions>{% include "assistant/partials/payment_actions.html" %}</div>
   </div>
   <section class="spike-quick-section" aria-label="Ações rápidas do Spike">
     <div class="spike-section-heading">
@@ -51,7 +52,7 @@
     {% csrf_token %}
     <div class="spike-composer">
       <label class="sr-only" for="spike-message">Mensagem para o Spike</label>
-      <textarea id="spike-message" name="message" rows="2" maxlength="1000" autocomplete="off" placeholder="Pergunte sobre seus gastos, pagamentos ou sobre o sistema…" required></textarea>
+      <textarea id="spike-message" name="message" rows="2" maxlength="1000" autocomplete="off" placeholder="Pergunte sobre seus gastos ou peça para registrar um…" required></textarea>
     </div>
     <button type="submit" aria-label="Enviar mensagem para o Spike" title="Enviar">
       <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>

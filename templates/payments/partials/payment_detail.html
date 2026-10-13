@@ -35,6 +35,10 @@
       <strong>R$ {{ object.amount|floatformat:2 }}</strong>
     </div>
     <dl class="payment-detail-grid">
+      {% if object.credit_card %}<div><dt>Cartão</dt><dd>{{ object.credit_card.name }}</dd></div>{% endif %}
+      {% if object.statement_due_date and not object.is_credit_card_bill %}<div><dt>Vencimento da fatura</dt><dd>{{ object.statement_due_date|date:"d/m/Y" }}</dd></div>{% endif %}
+      {% if object.recurring_schedule %}<div><dt>Recorrência</dt><dd>{{ object.recurring_schedule.get_interval_months_display }}{% if not object.recurring_schedule.active %} (inativa){% endif %}</dd></div>{% endif %}
+      {% if object.recurrence %}<div><dt>Origem</dt><dd>Pagamento recorrente · {{ object.recurrence.get_interval_months_display }}</dd></div>{% endif %}
       <div>
         <dt><i class="fa-solid fa-tags" aria-hidden="true"></i> Tipo de lançamento</dt>
         <dd>{{ object.get_kind_display }}</dd>
@@ -44,8 +48,8 @@
         <dd>{{ object.payment_method.name|default:"-" }}</dd>
       </div>
       <div>
-        <dt><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Data de pagamento</dt>
-        <dd>{% if object.payment_date %}{{ object.payment_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+        <dt><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> {% if object.is_credit_card_bill %}Vencimento da fatura{% elif object.credit_card_statement %}Data da compra{% elif object.credit_card %}Data da {% if object.is_installment %}parcela{% else %}compra{% endif %}{% elif object.scheduled_date %}Data prevista{% else %}Data de pagamento{% endif %}</dt>
+        <dd>{% if object.payment_date %}{{ object.payment_date|date:"d/m/Y" }}{% elif object.is_credit_card_bill and object.statement_due_date %}{{ object.statement_due_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
       </div>
       <div>
         <dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Data agendada</dt>

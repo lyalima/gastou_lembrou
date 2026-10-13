@@ -1,6 +1,16 @@
 from allauth.account.signals import email_confirmed
 from django.contrib.auth import login
 from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_in
+from django.utils import timezone
+
+
+@receiver(user_logged_in)
+def set_absolute_session_deadline(sender, request, user, **kwargs):
+    if request is not None:
+        deadline = timezone.now() + timezone.timedelta(hours=24)
+        request.session["auth_expires_at"] = deadline.timestamp()
+        request.session.set_expiry(deadline)
 
 
 @receiver(email_confirmed)

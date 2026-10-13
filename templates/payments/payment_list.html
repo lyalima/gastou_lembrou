@@ -77,12 +77,12 @@
 
       <div class="payment-filters-row payment-filters-secondary">
         <label class="filter-field">
-          <span>Dia</span>
+          <span>Dia do lançamento</span>
           <input class="form-input" type="date" name="day" value="{{ request.GET.day }}">
         </label>
 
         <label class="filter-field">
-          <span>Mês</span>
+          <span>Mês do lançamento</span>
           <span class="clearable-filter-field">
             <input class="form-input clearable-filter-input" type="number" name="month" min="1" max="12" value="{{ request.GET.month }}" placeholder="Mês">
             <button class="clear-filter-button" type="button" data-clear-filter aria-label="Limpar filtro de mês" title="Limpar mês">
@@ -195,7 +195,7 @@
       <div class="payment-section-heading">
         <div>
           <p class="payments-eyebrow">Compras parceladas</p>
-          <h2 id="future-installments-title">Lançamentos futuros</h2>
+          <h2 id="future-installments-title">Parcelas futuras</h2>
         </div>
         <span>{{ future_installments|length }} parcela{{ future_installments|length|pluralize }} futura{{ future_installments|length|pluralize }}</span>
       </div>

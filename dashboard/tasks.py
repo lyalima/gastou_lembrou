@@ -12,6 +12,7 @@ from payments.models import Payment
 
 from .insights import build_insight_dataset, generate_insights
 from .metrics import accountable_payments, filter_payments_by_report_month
+from .metrics import spending_payments
 from .models import FinancialInsightSnapshot, MonthlySpendingGoal, SpendingGoalNotification
 from .reports import build_dashboard_report_pdf
 
@@ -76,7 +77,7 @@ def check_spending_goal_alert(user_id, period_key):
     if not goal or not goal.active_alert_thresholds or not goal.user.email:
         return False
 
-    payments = filter_payments_by_report_month(accountable_payments(Payment.objects.filter(user_id=user_id)), month)
+    payments = spending_payments(user_id, month)
     spent = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
     if not goal.amount or goal.amount <= 0:
         return False

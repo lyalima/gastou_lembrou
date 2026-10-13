@@ -6,7 +6,7 @@
     <div>
       <p class="workspace-eyebrow">Visão financeira</p>
       <h1>Dashboard</h1>
-      <p class="workspace-subtitle">Resumo dos pagamentos em {{ insight_period_label }}.</p>
+      <p class="workspace-subtitle">Resumo de {{ insight_period_label }}.</p>
     </div>
     <button
       class="btn-primary"
@@ -24,7 +24,7 @@
     <div class="workspace-panel-heading">
       <div>
         <h2 id="dashboard-tools-title"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Período e relatório</h2>
-        <p>Consulte as métricas e gere o PDF mensal.</p>
+        <p>Cartão pelo vencimento da fatura; demais formas pelo pagamento ou agendamento.</p>
       </div>
     </div>
     <div class="dashboard-toolbar-grid">
@@ -59,6 +59,38 @@
   </section>
 
   {% include "dashboard/partials/insights.html" %}
+  <section class="workspace-panel dashboard-cards-panel" aria-labelledby="card-balances-title">
+    <div class="workspace-panel-heading dashboard-cards-heading">
+      <h2 id="card-balances-title"><i class="fa-regular fa-credit-card" aria-hidden="true"></i> Cartões e faturas</h2>
+      <a class="btn-secondary" href="{% url 'payments:cards' %}"><i class="fa-solid fa-gear" aria-hidden="true"></i> Meus cartões</a>
+    </div>
+    <div class="dashboard-card-grid">
+      {% for item in card_summaries %}
+        <article class="dashboard-card-account">
+          <header>
+            <span class="dashboard-card-icon" aria-hidden="true"><i class="fa-solid fa-credit-card"></i></span>
+            <h3 title="{{ item.card.name }}">{{ item.card.name }}</h3>
+          </header>
+          <div class="dashboard-card-values">
+            <div class="dashboard-card-value dashboard-card-value-current">
+              <span>Fatura {{ card_month|date:"m/Y" }}</span>
+              <div class="dashboard-card-amount"><strong>R$ {{ item.current|floatformat:2 }}</strong><a class="icon-action-btn" href="{% url 'payments:invoices' %}?card={{ item.card.pk }}&amp;month={{ card_month|date:'Y-m' }}" aria-label="Visualizar fatura {{ item.card.name }} de {{ card_month|date:'m/Y' }}" title="Visualizar fatura"><i class="fa-solid fa-eye" aria-hidden="true"></i></a></div>
+            </div>
+            <div class="dashboard-card-value">
+              <span>Próxima · {{ card_next_month|date:"m/Y" }}</span>
+              <div class="dashboard-card-amount"><strong>R$ {{ item.next|floatformat:2 }}</strong><a class="icon-action-btn" href="{% url 'payments:invoices' %}?card={{ item.card.pk }}&amp;month={{ card_next_month|date:'Y-m' }}" aria-label="Visualizar fatura {{ item.card.name }} de {{ card_next_month|date:'m/Y' }}" title="Visualizar fatura"><i class="fa-solid fa-eye" aria-hidden="true"></i></a></div>
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="dashboard-cards-empty">
+          <span aria-hidden="true"><i class="fa-regular fa-credit-card"></i></span>
+          <p>Nenhum cartão cadastrado.</p>
+          <a href="{% url 'payments:cards' %}">Cadastrar cartão</a>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
 
   <section class="workspace-panel spending-goal-panel" aria-labelledby="spending-goal-title">
     <div class="workspace-panel-heading">
@@ -78,7 +110,7 @@
     </div>
     <div class="spending-goal-summary">
       <div>
-        <span>Gasto no mês</span>
+        <span>Gastos no mês</span>
         <strong>R$ {{ spending_goal_spent|floatformat:2 }}</strong>
       </div>
       <div>
@@ -119,7 +151,7 @@
     <article class="metric-card metric-card-primary">
       <span class="metric-icon"><i class="fa-solid fa-wallet" aria-hidden="true"></i></span>
       <div>
-        <p>Total registrado</p>
+        <p>Total do período</p>
         <strong>R$ {{ total|floatformat:2 }}</strong>
       </div>
     </article>
@@ -192,7 +224,7 @@
         <div class="workspace-data-row">
           <div>
             <strong>{{ payment.title }}</strong>
-            <span>{% if payment.payment_date %}{{ payment.payment_date|date:"d/m/Y" }}{% else %}Sem data{% endif %}</span>
+            <span>{% if payment.credit_card and payment.statement_due_date %}Fatura: {{ payment.statement_due_date|date:"d/m/Y" }}{% elif payment.scheduled_date %}Agendado: {{ payment.scheduled_date|date:"d/m/Y" }}{% elif payment.payment_date %}Pago em: {{ payment.payment_date|date:"d/m/Y" }}{% else %}Sem data{% endif %}</span>
           </div>
           <strong>R$ {{ payment.amount|floatformat:2 }}</strong>
         </div>

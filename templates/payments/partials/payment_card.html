@@ -37,9 +37,15 @@
       <dd title="{{ payment.payment_method.name|default:'-' }}">{{ payment.payment_method.name|default:"-" }}</dd>
     </div>
     <div>
-      <dt><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Data de pagamento</dt>
-      <dd>{% if payment.payment_date %}{{ payment.payment_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+      <dt><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> {% if payment.is_credit_card_bill %}Vencimento da fatura{% elif payment.credit_card_statement %}Data da compra{% elif payment.credit_card %}Data da {% if payment.is_installment %}parcela{% else %}compra{% endif %}{% elif payment.scheduled_date %}Data prevista{% else %}Data de pagamento{% endif %}</dt>
+      <dd>{% if payment.payment_date %}{{ payment.payment_date|date:"d/m/Y" }}{% elif payment.is_credit_card_bill and payment.statement_due_date %}{{ payment.statement_due_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
     </div>
+    {% if payment.statement_due_date and not payment.is_credit_card_bill %}
+      <div>
+        <dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Vencimento da fatura</dt>
+        <dd>{% if payment.statement_due_date %}{{ payment.statement_due_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>
+      </div>
+    {% endif %}
     <div>
       <dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Agendada para</dt>
       <dd>{% if payment.scheduled_date %}{{ payment.scheduled_date|date:"d/m/Y" }}{% else %}-{% endif %}</dd>

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Meus cartões{% endblock %}
+{% block content %}
+<div class="workspace-page">
+  <header class="workspace-header"><div><h1>Meus cartões</h1></div><button class="btn-primary" hx-get="{% url 'payments:card_create' %}" hx-target="#modal" type="button"><i class="fa-solid fa-plus" aria-hidden="true"></i> Novo cartão</button></header>
+  <div class="card-accounts-grid">
+    {% for card in cards %}<article class="credit-account">
+      <h2><i class="fa-regular fa-credit-card" aria-hidden="true"></i> {{ card.name }}</h2><p>{{ card.description }}</p>
+      <dl><dt>Fechamento</dt><dd>Dia {{ card.closing_day }}</dd><dt>Vencimento</dt><dd>Dia {{ card.due_day }}</dd></dl>
+      <button class="btn-secondary" type="button" hx-get="{% url 'payments:card_update' card.pk %}" hx-target="#modal"><i class="fa-solid fa-pen" aria-hidden="true"></i> Editar</button>
+    </article>{% empty %}<p>Nenhum cartão cadastrado.</p>{% endfor %}
+  </div>
+  {% if recent_card_payments %}
+    <section class="workspace-panel card-purchases-panel" aria-labelledby="card-purchases-title">
+      <div class="workspace-panel-heading">
+        <h2 id="card-purchases-title">Compras e parcelas recentes</h2>
+      </div>
+      <div class="workspace-data-list">
+        {% for payment in recent_card_payments %}
+          <div class="workspace-data-row">
+            <div>
+              <strong>{{ payment.title }}{% if payment.has_installment_info %} · {{ payment.installment_number }}/{{ payment.installment_total }}{% endif %}</strong>
+              <span>{{ payment.credit_card.name }} · {% if payment.payment_date %}{% if payment.is_installment %}Parcela{% else %}Compra{% endif %} {{ payment.payment_date|date:"d/m/Y" }}{% else %}Data não informada{% endif %}{% if payment.statement_due_date %} · Fatura {{ payment.statement_due_date|date:"m/Y" }} (vence {{ payment.statement_due_date|date:"d/m" }}){% endif %}</span>
+            </div>
+            <strong>R$ {{ payment.amount|floatformat:2 }}</strong>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

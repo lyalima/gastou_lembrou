@@ -9,6 +9,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
 from django.views.decorators.http import require_POST
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.http import Http404
 
 from kombu.exceptions import OperationalError
 
@@ -20,7 +24,7 @@ from .calendar import (
     google_calendar_configured,
     validate_calendar_state,
 )
-from .models import GoogleCalendarConnection
+from .models import GoogleCalendarConnection, AssistantPaymentAction
 from .services import (
     QUICK_ACTIONS,
     answer_spike,
@@ -38,8 +42,29 @@ logger = logging.getLogger(__name__)
 @require_POST
 def spike_chat_view(request):
     message = request.POST.get("message", "")
-    result = answer_spike(request.user, message, conversation=get_active_conversation(request.user))
+    conversation = get_active_conversation(request.user)
+    result = answer_spike(request.user, message, conversation=conversation, allow_actions=True)
+    result["actions_html"] = render_to_string("assistant/partials/payment_actions.html", {"payment_actions": pending_actions(conversation)}, request=request)
     return JsonResponse(result)
+
+
+def pending_actions(conversation):
+    return conversation.payment_actions.filter(status="pending", expires_at__gt=timezone.now()).select_related("payment")
+
+
+@login_required
+@require_POST
+def spike_payment_action_view(request, pk):
+    from .actions import confirm_payment_action
+    if request.POST.get("decision") not in {"confirm", "cancel"}:
+        return JsonResponse({"answer": "Escolha confirmar ou cancelar."}, status=400)
+    try:
+        action = confirm_payment_action(request.user, pk, request.POST["decision"])
+    except AssistantPaymentAction.DoesNotExist:
+        raise Http404 from None
+    except ValidationError as exc:
+        return JsonResponse({"answer": " ".join(exc.messages)}, status=409)
+    return JsonResponse({"answer": "Pagamento salvo." if action.status == "confirmed" else "Proposta cancelada.", "confirmed": action.status == "confirmed"})
 
 
 @login_required
@@ -60,6 +85,7 @@ class SpikePanelView(LoginRequiredMixin, View):
                 "quick_actions": QUICK_ACTIONS,
                 "conversation": conversation,
                 "conversation_messages": conversation.messages.order_by("created_at"),
+                "payment_actions": pending_actions(conversation),
             },
         )
 

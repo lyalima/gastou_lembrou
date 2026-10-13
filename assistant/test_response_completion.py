@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase, override_settings
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from .graph import _complete_tool_answer, _invoke_agent
+from .graph import _complete_tool_answer, _invoke_agent, _creation_tool_feedback
 
 
 @override_settings(GEMINI_API_KEY="test-key")
@@ -56,3 +56,22 @@ class SpikeResponseCompletionTests(SimpleTestCase):
             create.return_value.invoke.return_value = {"messages": [AIMessage(content="Resposta original")]}
             self.assertEqual(_invoke_agent(Mock(), "Pergunta", [], ""), "Resposta original")
             self.model.invoke.assert_not_called()
+
+    def test_creation_tool_feedback_overrides_invented_command(self):
+        evidence = ToolMessage(content='{"mensagem_usuario":"Confira os dados na janela."}', name="preparar_gasto", tool_call_id="draft")
+        with patch("langchain_google_genai.ChatGoogleGenerativeAI", return_value=self.model), patch("assistant.graph.build_spike_tools", return_value=[]), patch("langchain.agents.create_agent") as create:
+            create.return_value.invoke.return_value = {"messages": [HumanMessage(content="Crie um gasto"), evidence, AIMessage(content="Execute consultar_opcoes_de_cadastro()") ]}
+            self.assertEqual(_invoke_agent(Mock(), "Crie um gasto", [], ""), "Confira os dados na janela.")
+            self.assertEqual(create.return_value.invoke.call_count, 1)
+
+    def test_creation_feedback_is_not_reused_from_previous_turn(self):
+        evidence = ToolMessage(content='{"mensagem_usuario":"Revisão antiga"}', name="preparar_gasto", tool_call_id="old")
+        self.assertEqual(_creation_tool_feedback([evidence, HumanMessage(content="Outra pergunta"), self.final]), "")
+
+    def test_invented_commands_get_only_one_repair_attempt(self):
+        with patch("langchain_google_genai.ChatGoogleGenerativeAI", return_value=self.model), patch("assistant.graph.build_spike_tools", return_value=[]), patch("langchain.agents.create_agent") as create:
+            create.return_value.invoke.return_value = {"messages": [AIMessage(content="Use consultar_opcoes_de_cadastro()") ]}
+            answer = _invoke_agent(Mock(), "Crie um gasto", [], "")
+            self.assertEqual(create.return_value.invoke.call_count, 2)
+            self.assertNotIn("consultar_opcoes", answer)
+            self.assertIn("Nenhum gasto foi salvo automaticamente", answer)
